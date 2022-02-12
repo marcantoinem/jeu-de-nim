@@ -1,21 +1,5 @@
-struct game {
-    pile1: u8,
-    pile2: u8,
-    ctaki: bool,
-}
-
-impl game {
-    fn new() -> game {
-        game {
-            pile1: 5,
-            pile2: 4,
-            ctaki: true,
-        }
-    }
-}
-
+mod qlearning;
 fn main() {
-    let game = game::new();
     println!("Le jeu de Nim.");
 }
 
