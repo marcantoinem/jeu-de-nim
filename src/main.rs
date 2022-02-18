@@ -1,11 +1,7 @@
-use crate::qlearning::Piles;
-
 mod qlearning;
 fn main() {
-    let default = Piles {
-        piles: vec!(2,3),
-    };
-    qlearning::train(default, 32);
+    let piles = vec![2, 3];
+    qlearning::train(piles, 32);
     println!("Le jeu de Nim.");
 }
 
