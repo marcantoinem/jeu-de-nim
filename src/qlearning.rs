@@ -1,17 +1,19 @@
+use rand::distributions::WeightedIndex;
 use std::collections::HashMap;
 
 // Récompense
 // +1 pour une victoire sur toutes les actions
 // -1 pour une défaite sur les actions
 
+#[derive(Copy, Clone)]
 pub struct Action {
     pile: u8,
     nombre_enleve: u8,
 }
 
+#[derive(Copy, Clone)]
 struct ActionAvecPoids {
-    pile: u8,
-    nombre_enleve: u8,
+    action: Action,
     poids: u32,
 }
 
@@ -23,60 +25,61 @@ fn zero_partout(piles: &Vec<u8>) -> bool {
     }
     true
 }
-fn action_possible(piles: &Vec<u8>) -> Vec<Action> {
+
+fn actions_possibles(piles: Vec<u8>, poids: u32) -> Vec<ActionAvecPoids> {
     let mut actions = vec![];
     let mut pile_index = 1;
     for pile in piles {
-        for i in 1..*pile {
+        for i in 1..pile {
             let action = Action {
-                pile: pile_index,
+                pile,
                 nombre_enleve: i,
             };
-            actions.push(action);
+            let action_nettoye = ActionAvecPoids { action, poids };
+            actions.push(action_nettoye);
         }
         pile_index += 1;
     }
     actions
 }
 
-fn nettoyer_hashmap(hashmap: HashMap<Vec<u8>, Vec<ActionAvecPoids>>) -> HashMap<Vec<u8>, Action> {
-    let hashmap_nettoye = HashMap::new();
-    for (pile, liste_action) in hashmap {
-
-    }
-    hashmap_nettoye
-}
-
-pub fn train(piles: Vec<u8>, number_of_games: u32) -> HashMap<Vec<u8>, Action> {
+pub fn train(mut piles: Vec<u8>, number_of_games: u32) -> HashMap<Vec<u8>, Action> {
     let mut dictionary_of_position = HashMap::new();
-    for i in 0..piles[0] {
-        for j in 0..piles[1] {
+    
+    let mut sorted_piles = &mut piles;
+    sorted_piles.sort();
+
+    for i in 0..(sorted_piles[0] + 1) {
+        for j in i..(sorted_piles[1] + 1) {
             let position = vec![i, j];
-            let mut actions = vec![];
-            for x in 1..i {
-                let action = ActionAvecPoids {
-                    pile: 1,
-                    nombre_enleve: x,
-                    poids: 0,
-                };
-                actions.push(action);
-            }
-            for y in 1..i {
-                let action = ActionAvecPoids {
-                    pile: 2,
-                    nombre_enleve: y,
-                    poids: 0,
-                };
-                actions.push(action);
-            }
+            let mut actions = actions_possibles(sorted_piles.to_vec(), 0);
             dictionary_of_position.insert(position, actions);
         }
     }
+
     for _ in 0..number_of_games {
         let mut mut_piles = &piles;
-        while zero_partout(mut_piles) == false {
+        while zero_partout(mut_piles) == false {}
+    }
 
+    nettoyer_hashmap(dictionary_of_position)
+}
+
+fn action_avec_poids_maximal(liste_action: &Vec<ActionAvecPoids>) -> Action {
+    let mut best_action = &liste_action[0];
+    for i in 0..liste_action.len() {
+        let next_action = &liste_action[i + 1];
+        if next_action.poids > best_action.poids {
+            best_action = next_action;
         }
     }
-    nettoyer_hashmap(dictionary_of_position)
+    best_action.action
+}
+
+fn nettoyer_hashmap(hashmap: HashMap<Vec<u8>, Vec<ActionAvecPoids>>) -> HashMap<Vec<u8>, Action> {
+    let mut hashmap_nettoye = HashMap::new();
+    for (pile, liste_action) in hashmap {
+        hashmap_nettoye.insert(pile, action_avec_poids_maximal(&liste_action));
+    }
+    hashmap_nettoye
 }

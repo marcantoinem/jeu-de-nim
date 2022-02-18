@@ -55,13 +55,3 @@ fn main() {                                                                 //Ef
 // avec un while (tant que) < ou = ???+- nb max
 //on va le combiner avec une autre variable "t" (nb de variable combiner dépend du nb de pile total) qui part de la même valeur que la variable "w"
 // pousser la combinaison des variables dans le vecteur et retour au début de la loop
-
-
-let mut piles = vec![5, 4];
-piles.sort();
-println!("{:?}", piles);
-            for s in 0..(piles[0]+1) {
-                for d in s..(piles[1]+1) {
-                    println!("{} {}", s, d);
-                }
-            }
