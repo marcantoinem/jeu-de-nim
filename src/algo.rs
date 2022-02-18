@@ -7,8 +7,8 @@ struct game {
 impl game {
     fn new() -> game {                                                      //Poser les valeurs des piles
         game {
-            pile1: 69,
-            pile2: 42,
+            pile1: 5,
+            pile2: 4,
         }
     }
                                                                             //algorithme pour vérifier quel coups est possible pour que le xor arrive à 0.
@@ -46,3 +46,22 @@ fn main() {                                                                 //Ef
     };
     println!("{:?}", game); 
 }
+
+//[] = notation dans vecteur
+
+//créer vecteur pour contenir les mouvements sans ordre
+//loop : part de 0 pour une variable "w" jusqu'à la fin de la pile (nb max)
+// chaque début de la loop on rajoute 1 à "w"
+// avec un while (tant que) < ou = ???+- nb max
+//on va le combiner avec une autre variable "t" (nb de variable combiner dépend du nb de pile total) qui part de la même valeur que la variable "w"
+// pousser la combinaison des variables dans le vecteur et retour au début de la loop
+
+
+let mut piles = vec![5, 4];
+piles.sort();
+println!("{:?}", piles);
+            for s in 0..(piles[0]+1) {
+                for d in s..(piles[1]+1) {
+                    println!("{} {}", s, d);
+                }
+            }
