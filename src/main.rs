@@ -1,8 +1,8 @@
 mod qlearning;
 fn main() {
-    let piles = vec![2, 3];
-    qlearning::train(piles, 32);
-    println!("Le jeu de Nim.");
+    let piles = [2, 2];
+    let hashmap = qlearning::train(&piles, 1);
+    println!("Le jeu de Nim. {:?}", hashmap);
 }
 
 //  001 = 1 = 2⁰

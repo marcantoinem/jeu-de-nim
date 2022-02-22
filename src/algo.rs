@@ -1,50 +1,25 @@
 #[derive(Debug)]
-struct game {
-    pile1: u8,
-    pile2: u8,
-}
-
-impl game {
-    fn new() -> game {                                                      //Poser les valeurs des piles
-        game {
-            pile1: 5,
-            pile2: 4,
+                                                                          //algorithme pour vérifier quel coups est possible pour que le xor arrive à 0.
+fn find_xor_zero(piles: Vec<u8>) -> Vec<u8> {
+    for i in 1..piles[0] {                                            //1er pile vérif
+        if (piles[0] - i) ^ piles[1] == 0{
+            let modified_game = vec![piles[0] - i, piles[1]];
+            return modified_game;
         }
     }
-                                                                            //algorithme pour vérifier quel coups est possible pour que le xor arrive à 0.
-    fn find_xor_zero(&self) -> Option<game> {
-        for i in 1..self.pile1 {                                            //1er pile vérif
-            if (self.pile1 - i) ^ self.pile2 == 0{
-                let modified_game = game {
-                    pile1: self.pile1 - i,
-                    pile2: self.pile2,
-                };
-                return Some(modified_game);
-            }
+    for j in 1..piles[1] {                                            //2e pile vérif
+        if piles[0] ^ (piles[1] - j) == 0{
+            let modified_game = vec![piles[0], piles[1] - j];
+            return modified_game;
         }
-        for j in 1..self.pile2 {                                            //2e pile vérif
-            if self.pile1 ^ (self.pile2 - j) == 0{
-                let modified_game = game {
-                    pile1: self.pile1,
-                    pile2: self.pile2 - j,
-                };
-                return Some(modified_game);
-            }
-        }
-        None
     }
-}
-
-
-fn main() {                                                                 //Effectuer le move calculé précédamment
-    let mut game = game::new();
-    println!("{:?}", game);
-    let next_state = game.find_xor_zero();
-    match game.find_xor_zero() {
-        Some(position) => game = position,
-        None => println!("Pssst, c'est la chance du débutant... Baka!"),
-    };
-    println!("{:?}", game); 
+    if piles[0] > 0{
+        let modified_game = vec![piles[0] - 1, piles[1]];
+        modified_game
+    } else {
+        let modified_game = vec![piles[0], piles[1] - 1];
+        modified_game
+    }
 }
 
 //[] = notation dans vecteur
