@@ -1,8 +1,8 @@
 mod qlearning;
 fn main() {
-    let piles = [2, 2];
-    let hashmap = qlearning::train(&piles, 1);
-    println!("Le jeu de Nim. {:?}", hashmap);
+    let piles = [60, 48];
+    let _hashmap = qlearning::train(&piles, 10000);
+    println!("Le jeu de Nim.");
 }
 
 //  001 = 1 = 2⁰
