@@ -1,6 +1,6 @@
 mod qlearning;
 fn main() {
-    let piles = [60, 48];
+    let piles = [3, 2];
     let _hashmap = qlearning::train(&piles, 10000);
     println!("Le jeu de Nim.");
 }

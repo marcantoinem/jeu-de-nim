@@ -14,13 +14,10 @@ pub struct Action {
 impl Action {
     fn future_piles(self, piles: [(u8, u8); 2]) -> [u8; 2] {
         let mut future_piles = piles;
-        // println!("{:?}", piles);
         future_piles.sort_by(|&(_, a), &(_, b)| a.cmp(&b));
-        // println!("{:?}, {:?}", future_piles, self);
         let pile_index = self.pile as usize;
-        future_piles[pile_index].1 = future_piles[pile_index].1 - self.nombre_enleve;
+        future_piles[pile_index].1 -= self.nombre_enleve;
         future_piles.sort_by(|&(a, _), &(b, _)| a.cmp(&b));
-        // println!("{:?}\n", future_piles);
         let mut piles_simplifie: [u8; 2] = [0; 2];
         let mut index = 0;
         for (_, pile) in future_piles {
@@ -47,14 +44,14 @@ fn zero_partout(piles: [u8; 2]) -> bool {
 }
 
 fn find_xor_zero(piles: [u8; 2]) -> [u8; 2] {
-    for i in 1..(piles[0]+1) {
+    for i in 1..(piles[0] + 1) {
         //1er pile vérif
         if (piles[0] - i) ^ piles[1] == 0 {
             let modified_game = [piles[0] - i, piles[1]];
             return modified_game;
         }
     }
-    for j in 1..(piles[1]+1) {
+    for j in 1..(piles[1] + 1) {
         //2e pile vérif
         if piles[0] ^ (piles[1] - j) == 0 {
             let modified_game = [piles[0], piles[1] - j];
@@ -99,23 +96,26 @@ pub fn train(piles: &[u8; 2], number_of_games: u32) -> HashMap<[u8; 2], Action> 
         for j in i..(sorted_piles[1] + 1) {
             let position = [i, j];
             let actions = actions_possibles(&position);
-            // println!("{:?}, {:?}", position, actions);
             dictionary_of_position.insert(position, actions);
         }
     }
+
     for _ in 0..number_of_games {
         let mut piles = *piles;
         let mut all_piles = vec![];
         let win = loop {
             if zero_partout(piles) {
-                println!("1");
+                println!("défaite");
                 break false;
             }
             let mut sorted_piles = piles;
             sorted_piles.sort_by(|a, b| a.cmp(b));
             let moves_vec = match dictionary_of_position.get(&sorted_piles) {
                 Some(value) => value,
-                None => {println!("2"); break true},
+                None => {
+                    println!("2");
+                    break true;
+                }
             };
             let mut moves_list: RandWeight<Action> = RandWeight::new();
             for moves in moves_vec {
@@ -132,6 +132,7 @@ pub fn train(piles: &[u8; 2], number_of_games: u32) -> HashMap<[u8; 2], Action> 
             all_piles.push((piles, action_prise));
             piles = action_prise.future_piles(piles_avec_index);
             if zero_partout(piles) {
+                println!("victoire");
                 break true;
             }
             piles = find_xor_zero(piles);
@@ -150,7 +151,7 @@ pub fn train(piles: &[u8; 2], number_of_games: u32) -> HashMap<[u8; 2], Action> 
             let entree = dictionary_of_position.entry(piles).or_default();
             if win {
                 entree[index].poids += 1;
-            } else if entree[index].poids > 10{
+            } else if entree[index].poids > 10 {
                 entree[index].poids -= 1;
             }
             //*entree.poids += 1;
@@ -163,7 +164,7 @@ pub fn train(piles: &[u8; 2], number_of_games: u32) -> HashMap<[u8; 2], Action> 
     // let test = nettoyer_hashmap(dictionary_of_position);
     // println!("{:?}", test);
     // test
-    // println!("{:#?}", dictionary_of_position);                                   
+    // println!("{:#?}", dictionary_of_position);
     nettoyer_hashmap(dictionary_of_position)
 }
 
@@ -172,7 +173,7 @@ fn action_avec_poids_maximal(liste_action: Vec<ActionAvecPoids>) -> Action {
         return Action {
             pile: 0,
             nombre_enleve: 0,
-        }
+        };
     }
     let mut best_action = &liste_action[0];
     for i in 0..liste_action.len() {
