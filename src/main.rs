@@ -2,7 +2,7 @@ use crate::qlearning::Piles;
 
 mod qlearning;
 fn main() {
-    let piles = Piles([3, 5]);
+    let piles = Piles([3,4]);
     let _hashmap = qlearning::train(&piles, 10000);
     println!("Le jeu de Nim.");
 }
