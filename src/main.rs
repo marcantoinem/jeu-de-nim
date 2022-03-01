@@ -2,9 +2,21 @@ use crate::qlearning::Piles;
 
 mod qlearning;
 fn main() {
-    let piles = Piles([3,4]);
-    let _hashmap = qlearning::train(&piles, 10000);
-    println!("Le jeu de Nim.");
+    let piles = Piles([5, 4, 7, 4]);
+    
+    if piles[0] ^ piles[1] ^ piles[2] ^ piles[3] == 0 {
+        println!("Le deuxième joueur devrait gagner.");
+    } else {
+        println!("Le premier joueur devrait gagner.");
+    }
+
+    let hashmap = qlearning::entrainé(&piles, 100000);
+    
+    if qlearning::victoire_parfaite(piles, hashmap) {
+        println!("Réussite");
+    } else {
+        println!("Échec");
+    }
 }
 
 //  001 = 1 = 2⁰
