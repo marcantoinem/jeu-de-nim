@@ -1,14 +1,16 @@
-use fxhash::FxHashMap;
 use derive_more::{Index, IndexMut, IntoIterator};
+use fxhash::FxHashMap;
 use rand::Rng;
 // Récompense
 // +1 pour une victoire sur toutes les actions
 // -1 pour une défaite sur les actions
 
-const ALPHA: f32 = 1.0;
+const ALPHA: f32 = 0.5;
 const GAMMA: f32 = 0.8;
 const RÉCOMPENSE: f32 = 2.0;
 const MINIMUM: f32 = 0.0001;
+
+const NOMBRE_DE_PILE: usize = 4;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Action {
@@ -23,14 +25,22 @@ struct ActionAvecPoids {
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Index, IndexMut, IntoIterator)]
-pub struct Piles(pub [u8;2]);
+pub struct Piles(pub [u8; NOMBRE_DE_PILE]);
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Index, IndexMut, IntoIterator)]
-pub struct PilesAvecIndex([(u8, u8);2]);
+pub struct PilesAvecIndex([(u8, u8); NOMBRE_DE_PILE]);
 
 impl Piles {
-    fn ajout_index(self) -> PilesAvecIndex {
-        let mut piles_avec_index = PilesAvecIndex([(0,0),(0,0)]);
+    pub fn xor(&self) -> u8 {
+        let mut xor = 0;
+        for pile in *self {
+            xor ^= pile;
+        }
+        xor
+    }
+
+    pub fn ajout_index(self) -> PilesAvecIndex {
+        let mut piles_avec_index = PilesAvecIndex([(0, 0), (0, 0), (0, 0), (0, 0)]);
         let mut index: u8 = 0;
         for pile in self.0 {
             piles_avec_index[index as usize] = (index, pile);
@@ -43,7 +53,7 @@ impl Piles {
         self.0.sort_by(|a, b| a.cmp(b));
     }
 
-    fn zero_partout(&self) -> bool {
+    pub fn zero_partout(&self) -> bool {
         for pile in self.0 {
             if pile != 0 {
                 return false;
@@ -52,28 +62,26 @@ impl Piles {
         true
     }
 
-    fn _find_xor_zero(&self) -> Piles {
-        for i in 1..(self[0] + 1) {
-            //1er pile vérif
-            if (self[0] - i) ^ self[1] == 0 {
-                let piles_futures = Piles([self[0] - i, self[1]]);
+    fn trouver_xor_zero(&self) -> Piles {
+        for index in 0..NOMBRE_DE_PILE {
+            if self[index] != 0 {
+                for i in 1..(self[index] + 1) {
+                    let mut piles_futures = Piles([self[0], self[1], self[2], self[3]]);
+                    piles_futures[index] -= i;
+                    if piles_futures.xor() == 0 {
+                        return piles_futures;
+                    }
+                }
+            }
+        }
+        for index in 0..self.0.len() {
+            if self[index] > 0 {
+                let mut piles_futures = Piles([self[0], self[1], self[2], self[3]]);
+                piles_futures[index] -= 1;
                 return piles_futures;
             }
         }
-        for j in 1..(self[1] + 1) {
-            //2e pile vérif
-            if self[0] ^ (self[1] - j) == 0 {
-                let piles_futures = Piles([self[0], self[1] - j]);
-                return piles_futures;
-            }
-        }
-        if self[0] > 0 {
-            let piles_futures = Piles([self[0] - 1, self[1]]);
-            piles_futures
-        } else {
-            let piles_futures = Piles([self[0], self[1] - 1]);
-            piles_futures
-        }
+        Piles([0; NOMBRE_DE_PILE])
     }
 
     fn genere_action(self) -> Vec<ActionAvecPoids> {
@@ -97,8 +105,8 @@ impl Piles {
 }
 
 impl PilesAvecIndex {
-    fn enleve_index(self) -> Piles {
-        let mut piles = Piles([(0),(0)]);
+    pub fn enleve_index(self) -> Piles {
+        let mut piles = Piles([(0), (0), (0), (0)]);
         let mut index: u8 = 0;
         for (_, pile) in self {
             piles[index as usize] = pile;
@@ -106,18 +114,17 @@ impl PilesAvecIndex {
         }
         piles
     }
-    fn trie_croissant(&mut self) {
+    pub fn trie_croissant(&mut self) {
         self.0.sort_by(|&(_, a), &(_, b)| a.cmp(&b));
     }
 
-    fn trie_original(&mut self) {
+    pub fn trie_original(&mut self) {
         self.0.sort_by(|&(a, _), &(b, _)| a.cmp(&b));
     }
 }
 
-
 impl Action {
-    fn future_piles(self, piles: Piles) -> Piles {
+    pub fn future_piles(self, piles: Piles) -> Piles {
         let mut future_piles = piles.ajout_index();
         future_piles.trie_croissant();
         let pile_index = self.pile as usize;
@@ -132,10 +139,10 @@ fn choisis_action(vecteur: &Vec<ActionAvecPoids>) -> Action {
     for action_avec_poids in vecteur {
         somme += action_avec_poids.poids;
     }
-    
+
     let mut rng = rand::thread_rng();
     let mut valeur_aléatoire: f32 = rng.gen();
-    
+
     for action_avec_poids in vecteur {
         valeur_aléatoire -= action_avec_poids.poids / somme;
         if valeur_aléatoire <= 0.0 {
@@ -146,7 +153,7 @@ fn choisis_action(vecteur: &Vec<ActionAvecPoids>) -> Action {
     return vecteur[0].action;
 }
 
-pub fn train(piles: &Piles, nombre_de_partie: u32) -> FxHashMap<Piles, Action> {
+pub fn entraine(piles: &Piles, nombre_de_partie: u32) -> FxHashMap<Piles, Action> {
     let mut dictionnaire_de_position = FxHashMap::default();
 
     let mut piles_triées = piles.clone();
@@ -154,18 +161,22 @@ pub fn train(piles: &Piles, nombre_de_partie: u32) -> FxHashMap<Piles, Action> {
 
     for i in 0..(piles_triées[0] + 1) {
         for j in i..(piles_triées[1] + 1) {
-            let piles = Piles([i, j]);
-            let actions = piles.genere_action();
-            dictionnaire_de_position.insert(piles, actions);
+            for k in j..(piles_triées[2] + 1) {
+                for l in k..(piles_triées[3] + 1) {
+                    let piles = Piles([i, j, k, l]);
+                    let actions = piles.genere_action();
+                    dictionnaire_de_position.insert(piles, actions);
+                }
+            }
         }
     }
 
     for _ in 0..nombre_de_partie {
         let mut piles = piles.clone();
-        let mut all_piles = vec![];
+        let mut partie = vec![];
         let win = loop {
             if piles.zero_partout() {
-                println!("Deuxième joueur");
+                // println!("Deuxième joueur");
                 break false;
             }
 
@@ -181,17 +192,17 @@ pub fn train(piles: &Piles, nombre_de_partie: u32) -> FxHashMap<Piles, Action> {
             };
 
             let action_prise = choisis_action(vecteur);
-            all_piles.push((piles, action_prise));
+            partie.push((piles, action_prise));
             piles = action_prise.future_piles(piles);
 
             if piles.zero_partout() {
-                println!("Premier joueur");
+                // println!("Premier joueur");
                 break true;
             }
 
             let mut piles_triées = piles.clone();
             piles_triées.trie_croissant();
-            
+
             let vecteur = match dictionnaire_de_position.get(&piles_triées) {
                 Some(value) => value,
                 None => {
@@ -204,11 +215,11 @@ pub fn train(piles: &Piles, nombre_de_partie: u32) -> FxHashMap<Piles, Action> {
             piles = action_prise.future_piles(piles);
         };
 
-        all_piles.reverse();
+        partie.reverse();
 
-        let mut action_future= vec![];
+        let mut action_future = vec![];
 
-        for (piles, action_prise) in all_piles {
+        for (piles, action_prise) in partie {
             let mut piles = piles;
             piles.trie_croissant();
             let entrée = dictionnaire_de_position.get(&piles).unwrap();
@@ -219,12 +230,14 @@ pub fn train(piles: &Piles, nombre_de_partie: u32) -> FxHashMap<Piles, Action> {
                 }
                 index += 1;
             }
-            
+
             let entrée = dictionnaire_de_position.entry(piles).or_default();
             if win {
-                entrée[index].poids = entrée[index].poids as f32 + ALPHA * (RÉCOMPENSE + GAMMA * poids_maximal(action_future) - entrée[index].poids as f32);
+                entrée[index].poids = (1.0 - ALPHA) * entrée[index].poids
+                    + ALPHA * (RÉCOMPENSE + GAMMA * poids_maximal(action_future));
             } else if entrée[index].poids > 0.0 {
-                entrée[index].poids = entrée[index].poids as f32 + ALPHA * (-RÉCOMPENSE + GAMMA * poids_maximal(action_future) - entrée[index].poids as f32);
+                entrée[index].poids = (1.0 - ALPHA) * entrée[index].poids
+                    + ALPHA * (-RÉCOMPENSE + GAMMA * poids_maximal(action_future));
             }
 
             if entrée[index].poids < 0.0 {
@@ -274,4 +287,31 @@ fn nettoyer_hashmap(hashmap: FxHashMap<Piles, Vec<ActionAvecPoids>>) -> FxHashMa
         hashmap_nettoyé.insert(pile, action_avec_poids_maximal(liste_action));
     }
     hashmap_nettoyé
+}
+
+pub fn victoire_parfaite(piles_originales: Piles, hashmap: FxHashMap<Piles, Action>) -> bool {
+    let mut piles = piles_originales;
+    loop {
+        if piles.zero_partout() {
+            return false;
+        }
+
+        let mut piles_triées = piles.clone().ajout_index();
+        piles_triées.trie_croissant();
+
+        let action_prise = match hashmap.get(&piles_triées.enleve_index()) {
+            Some(value) => value,
+            None => {
+                return false;
+            }
+        };
+
+        piles = action_prise.future_piles(piles);
+
+        if piles.zero_partout() {
+            return true;
+        }
+
+        piles = piles.trouver_xor_zero();
+    }
 }
