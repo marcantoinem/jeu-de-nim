@@ -10,6 +10,8 @@ const GAMMA: f32 = 0.8;
 const RÉCOMPENSE: f32 = 2.0;
 const MINIMUM: f32 = 0.0001;
 
+const NOMBRE_DE_PILE: usize = 4;
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Action {
     pile: u8,
@@ -23,12 +25,20 @@ struct ActionAvecPoids {
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Index, IndexMut, IntoIterator)]
-pub struct Piles(pub [u8; 4]);
+pub struct Piles(pub [u8; NOMBRE_DE_PILE]);
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Index, IndexMut, IntoIterator)]
-pub struct PilesAvecIndex([(u8, u8); 4]);
+pub struct PilesAvecIndex([(u8, u8); NOMBRE_DE_PILE]);
 
 impl Piles {
+    pub fn xor(self) -> u8 {
+        let mut xor = 0;
+        for pile in self {
+            xor ^= pile;
+        }
+        xor
+    }
+
     pub fn ajout_index(self) -> PilesAvecIndex {
         let mut piles_avec_index = PilesAvecIndex([(0, 0), (0, 0), (0, 0), (0, 0)]);
         let mut index: u8 = 0;
@@ -52,56 +62,26 @@ impl Piles {
         true
     }
 
-    fn find_xor_zero(&self) -> Piles {
-        if self[1] != 0 {
-            for i in 1..(self[0] + 1) {
-                //1er pile vérif
-                if (self[0] - i) ^ self[1] ^ self[2] ^ self[3] == 0 {
-                    let piles_futures = Piles([self[0] - i, self[1], self[2], self[3]]);
-                    return piles_futures;
+    fn trouver_xor_zero(&self) -> Piles {
+        for index in 0..NOMBRE_DE_PILE {
+            if self[index] != 0 {
+                for i in 1..(self[index] + 1) {
+                    let mut piles_futures = Piles([self[0], self[1], self[2], self[3]]);
+                    piles_futures[index] -= i;
+                    if piles_futures.xor() == 0 {
+                        return piles_futures;
+                    }
                 }
             }
         }
-        if self[1] != 0 {
-            for j in 1..(self[1] + 1) {
-                //2e pile vérif
-                if self[0] ^ (self[1] - j) ^ self[2] ^ self[3] == 0 {
-                    let piles_futures = Piles([self[0], self[1] - j, self[2], self[3]]);
-                    return piles_futures;
-                }
+        for index in 0..self.0.len() {
+            if self[index] > 0 {
+                let mut piles_futures = Piles([self[0], self[1], self[2], self[3]]);
+                piles_futures[index] -= 1;
+                return piles_futures;
             }
         }
-        if self[2] != 0 {
-            for k in 1..(self[2] + 1) {
-                //3e pile vérif
-                if self[0] ^ self[1] ^ (self[2] - k) ^ self[3] == 0 {
-                    let piles_futures = Piles([self[0], self[1], self[2] - k, self[3]]);
-                    return piles_futures;
-                }
-            }
-        }
-        if self[3] != 0 {
-            for l in 1..(self[3] + 1) {
-                //4e pile vérif
-                if self[0] ^ self[1] ^ self[2] ^ (self[3] - l) == 0 {
-                    let piles_futures = Piles([self[0], self[1], self[2], self[3] - l]);
-                    return piles_futures;
-                }
-            }
-        }
-        if self[0] > 0 {
-            let piles_futures = Piles([self[0] - 1, self[1], self[2], self[3]]);
-            piles_futures
-        } else if self[1] > 0 {
-            let piles_futures = Piles([self[0], self[1] - 1, self[2], self[3]]);
-            piles_futures
-        } else if self[1] > 0 {
-            let piles_futures = Piles([self[0], self[1], self[2] - 1, self[3]]);
-            piles_futures
-        } else {
-            let piles_futures = Piles([self[0], self[1], self[2], self[3] - 1]);
-            piles_futures
-        }
+        Piles([0; NOMBRE_DE_PILE])
     }
 
     fn genere_action(self) -> Vec<ActionAvecPoids> {
@@ -253,14 +233,11 @@ pub fn entrainé(piles: &Piles, nombre_de_partie: u32) -> FxHashMap<Piles, Actio
 
             let entrée = dictionnaire_de_position.entry(piles).or_default();
             if win {
-                entrée[index].poids = entrée[index].poids
-                    + ALPHA
-                        * (RÉCOMPENSE + GAMMA * poids_maximal(action_future) - entrée[index].poids);
+                entrée[index].poids = (1.0 - ALPHA) * entrée[index].poids
+                    + ALPHA * (RÉCOMPENSE + GAMMA * poids_maximal(action_future));
             } else if entrée[index].poids > 0.0 {
-                entrée[index].poids = entrée[index].poids
-                    + ALPHA
-                        * (-RÉCOMPENSE + GAMMA * poids_maximal(action_future)
-                            - entrée[index].poids);
+                entrée[index].poids = (1.0 - ALPHA) * entrée[index].poids
+                    + ALPHA * (-RÉCOMPENSE + GAMMA * poids_maximal(action_future));
             }
 
             if entrée[index].poids < 0.0 {
@@ -335,6 +312,6 @@ pub fn victoire_parfaite(piles_originales: Piles, hashmap: FxHashMap<Piles, Acti
             return true;
         }
 
-        piles = piles.find_xor_zero();
+        piles = piles.trouver_xor_zero();
     }
 }
