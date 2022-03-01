@@ -31,9 +31,9 @@ pub struct Piles(pub [u8; NOMBRE_DE_PILE]);
 pub struct PilesAvecIndex([(u8, u8); NOMBRE_DE_PILE]);
 
 impl Piles {
-    pub fn xor(self) -> u8 {
+    pub fn xor(&self) -> u8 {
         let mut xor = 0;
-        for pile in self {
+        for pile in *self {
             xor ^= pile;
         }
         xor
@@ -153,7 +153,7 @@ fn choisis_action(vecteur: &Vec<ActionAvecPoids>) -> Action {
     return vecteur[0].action;
 }
 
-pub fn entrainé(piles: &Piles, nombre_de_partie: u32) -> FxHashMap<Piles, Action> {
+pub fn entraine(piles: &Piles, nombre_de_partie: u32) -> FxHashMap<Piles, Action> {
     let mut dictionnaire_de_position = FxHashMap::default();
 
     let mut piles_triées = piles.clone();

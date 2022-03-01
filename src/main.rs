@@ -4,18 +4,18 @@ mod qlearning;
 fn main() {
     let piles = Piles([5, 3, 0, 0]);
 
-    if piles[0] ^ piles[1] ^ piles[2] ^ piles[3] == 0 {
+    if piles.xor() == 0 {
         println!("Le deuxième joueur devrait gagner.");
     } else {
         println!("Le premier joueur devrait gagner.");
     }
 
-    let hashmap = qlearning::entrainé(&piles, 1000000);
+    let hashmap = qlearning::entraine(&piles, 1000000);
 
     if qlearning::victoire_parfaite(piles, hashmap) {
-        println!("Réussite");
+        println!("Le premier joueur a gagné.");
     } else {
-        println!("Échec");
+        println!("Le deuxième joueur a gagné.");
     }
 }
 
