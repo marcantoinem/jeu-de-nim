@@ -1,6 +1,8 @@
 use derive_more::{Index, IndexMut, IntoIterator};
 use fxhash::FxHashMap;
 use rand::Rng;
+
+
 // Récompense
 // +1 pour une victoire sur toutes les actions
 // -1 pour une défaite sur les actions
@@ -155,7 +157,8 @@ fn choisis_action(vecteur: &Vec<ActionAvecQualité>) -> Action {
 
 pub fn entraine(piles: &Piles, nombre_de_partie: u32) -> FxHashMap<Piles, Action> {
     let mut dictionnaire_de_position = FxHashMap::default();
-
+    let mut points = vec![];
+    let mut nb_de_win = 0;
     let mut piles_triées = piles.clone();
     piles_triées.trie_croissant();
 
@@ -171,7 +174,7 @@ pub fn entraine(piles: &Piles, nombre_de_partie: u32) -> FxHashMap<Piles, Action
         }
     }
 
-    for _ in 0..nombre_de_partie {
+    for nb in 1..=nombre_de_partie {
         let mut piles = piles.clone();
         let mut partie = vec![];
         let win = loop {
@@ -197,6 +200,7 @@ pub fn entraine(piles: &Piles, nombre_de_partie: u32) -> FxHashMap<Piles, Action
 
             if piles.zero_partout() {
                 // println!("Premier joueur");
+                nb_de_win += 1;
                 break true;
             }
 
@@ -215,6 +219,7 @@ pub fn entraine(piles: &Piles, nombre_de_partie: u32) -> FxHashMap<Piles, Action
             piles = action_prise.future_piles(piles);
         };
 
+        points.push((nb as f32, nb_de_win as f32));
         partie.reverse();
 
         let mut action_future = vec![];
