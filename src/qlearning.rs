@@ -2,13 +2,12 @@ use derive_more::{Index, IndexMut, IntoIterator};
 use fxhash::FxHashMap;
 use rand::Rng;
 
-
 // Récompense
 // +1 pour une victoire sur toutes les actions
 // -1 pour une défaite sur les actions
 
-const ALPHA: f32 = 0.5;
-const GAMMA: f32 = 0.8;
+const ALPHA: f32 = 0.9;
+const GAMMA: f32 = 0.5;
 const RÉCOMPENSE: f32 = 2.0;
 const MINIMUM: f32 = 0.0001;
 
@@ -42,7 +41,7 @@ impl Piles {
     }
 
     pub fn ajout_index(self) -> PilesAvecIndex {
-        let mut piles_avec_index = PilesAvecIndex([(0, 0);NOMBRE_DE_PILE]);
+        let mut piles_avec_index = PilesAvecIndex([(0, 0); NOMBRE_DE_PILE]);
         let mut index: u8 = 0;
         for pile in self.0 {
             piles_avec_index[index as usize] = (index, pile);
@@ -96,7 +95,10 @@ impl Piles {
                         pile: pile_index,
                         nombre_enleve: i,
                     };
-                    let action_avec_qualité = ActionAvecQualité { action, qualité: 1.0 };
+                    let action_avec_qualité = ActionAvecQualité {
+                        action,
+                        qualité: 1.0,
+                    };
                     actions.push(action_avec_qualité);
                 }
             }
@@ -134,6 +136,20 @@ impl Action {
         future_piles.trie_original();
         future_piles.enleve_index()
     }
+}
+
+fn cherche_et_choisis_action(
+    piles: Piles,
+    dictionnaire_de_position: &FxHashMap<Piles, Vec<ActionAvecQualité>>,
+) -> Action {
+    let mut piles_triées = piles.clone();
+    piles_triées.trie_croissant();
+
+    let vecteur = dictionnaire_de_position
+        .get(&piles_triées)
+        .expect("Erreur lors de la recherche de position.");
+
+    choisis_action(vecteur)
 }
 
 fn choisis_action(vecteur: &Vec<ActionAvecQualité>) -> Action {
@@ -183,18 +199,7 @@ pub fn entraine(piles: &Piles, nombre_de_partie: u32) -> FxHashMap<Piles, Action
                 break false;
             }
 
-            let mut piles_triées = piles.clone();
-            piles_triées.trie_croissant();
-
-            let vecteur = match dictionnaire_de_position.get(&piles_triées) {
-                Some(value) => value,
-                None => {
-                    println!("Erreur");
-                    break false;
-                }
-            };
-
-            let action_prise = choisis_action(vecteur);
+            let action_prise = cherche_et_choisis_action(piles, &dictionnaire_de_position);
             partie.push((piles, action_prise));
             piles = action_prise.future_piles(piles);
 
@@ -204,18 +209,7 @@ pub fn entraine(piles: &Piles, nombre_de_partie: u32) -> FxHashMap<Piles, Action
                 break true;
             }
 
-            let mut piles_triées = piles.clone();
-            piles_triées.trie_croissant();
-
-            let vecteur = match dictionnaire_de_position.get(&piles_triées) {
-                Some(value) => value,
-                None => {
-                    println!("Erreur");
-                    break false;
-                }
-            };
-
-            let action_prise = choisis_action(vecteur);
+            let action_prise = cherche_et_choisis_action(piles, &dictionnaire_de_position);
             piles = action_prise.future_piles(piles);
         };
 
@@ -286,7 +280,9 @@ fn action_avec_qualité_maximale(liste_action: Vec<ActionAvecQualité>) -> Actio
     meilleure_action.action
 }
 
-fn nettoyer_hashmap(hashmap: FxHashMap<Piles, Vec<ActionAvecQualité>>) -> FxHashMap<Piles, Action> {
+fn nettoyer_hashmap(
+    hashmap: FxHashMap<Piles, Vec<ActionAvecQualité>>
+) -> FxHashMap<Piles, Action> {
     let mut hashmap_nettoyé = FxHashMap::default();
     for (pile, liste_action) in hashmap {
         hashmap_nettoyé.insert(pile, action_avec_qualité_maximale(liste_action));
@@ -310,13 +306,13 @@ pub fn victoire_parfaite(piles_originales: Piles, hashmap: FxHashMap<Piles, Acti
                 return false;
             }
         };
-
+        println!("{:?}", piles.xor());
         piles = action_prise.future_piles(piles);
 
         if piles.zero_partout() {
             return true;
         }
-
+        println!("{:?}", piles.xor());
         piles = piles.trouver_xor_zero();
     }
 }

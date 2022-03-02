@@ -4,7 +4,7 @@ use std::time::Instant;
 mod qlearning;
 
 fn main() {
-    let piles = Piles([15, 10, 8, 8]);
+    let piles = Piles([5, 10, 8, 0]);
 
     if piles.xor() == 0 {
         println!("Le deuxième joueur devrait gagner.");
@@ -12,7 +12,7 @@ fn main() {
         println!("Le premier joueur devrait gagner.");
     }
     let maintenant = Instant::now();
-    let hashmap = qlearning::entraine(&piles, 1000000);
+    let hashmap = qlearning::entraine(&piles, 100000);
     let temps_écoulé = maintenant.elapsed();
     if qlearning::victoire_parfaite(piles, hashmap) {
         println!("Le premier joueur a gagné.");
