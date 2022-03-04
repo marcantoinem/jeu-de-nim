@@ -1,25 +1,18 @@
 use crate::qlearning::Piles;
-use std::time::Instant;
+// use std::time::Instant;
 
 mod qlearning;
 
 fn main() {
-    let piles = Piles([5, 10, 8, 0]);
+    let piles = Piles([2, 5, 0, 0]);
 
     if piles.xor() == 0 {
         println!("Le deuxième joueur devrait gagner.");
     } else {
         println!("Le premier joueur devrait gagner.");
     }
-    let maintenant = Instant::now();
-    let hashmap = qlearning::entraine(&piles, 100000);
-    let temps_écoulé = maintenant.elapsed();
-    if qlearning::victoire_parfaite(piles, hashmap) {
-        println!("Le premier joueur a gagné.");
-    } else {
-        println!("Le deuxième joueur a gagné.");
-    }
-    println!("Temps écoulé: {}", temps_écoulé.as_secs());
+    let pourcentage_victoire = piles.teste_fiabilité(100, 10000);
+    println!("{}%", pourcentage_victoire * 100.0);
 }
 
 //  001 = 1 = 2⁰

@@ -106,6 +106,16 @@ impl Piles {
         }
         actions
     }
+
+    pub fn teste_fiabilité(self, nombre_partie: u32, nombre_modele: u32) -> f32 {
+        let mut nombre_victoire = 0;
+        for _ in 0..nombre_modele {
+            let hashmap = entraine(&self, nombre_partie);
+            // let temps_écoulé = maintenant.elapsed();
+            nombre_victoire += victoire_parfaite(self, hashmap) as u32;
+        }
+        nombre_victoire as f32/ nombre_modele as f32
+    }
 }
 
 impl PilesAvecIndex {
@@ -171,7 +181,7 @@ fn choisis_action(vecteur: &Vec<ActionAvecQualité>) -> Action {
     return vecteur[0].action;
 }
 
-pub fn entraine(piles: &Piles, nombre_de_partie: u32) -> FxHashMap<Piles, Action> {
+pub fn entraine(piles: &Piles, nombre_partie: u32) -> FxHashMap<Piles, Action> {
     let mut dictionnaire_de_position = FxHashMap::default();
     let mut points = vec![];
     let mut nb_de_win = 0;
@@ -190,7 +200,7 @@ pub fn entraine(piles: &Piles, nombre_de_partie: u32) -> FxHashMap<Piles, Action
         }
     }
 
-    for nb in 1..=nombre_de_partie {
+    for nb in 1..=nombre_partie {
         let mut piles = piles.clone();
         let mut partie = vec![];
         let win = loop {
@@ -306,13 +316,13 @@ pub fn victoire_parfaite(piles_originales: Piles, hashmap: FxHashMap<Piles, Acti
                 return false;
             }
         };
-        println!("{:?}", piles.xor());
+        // println!("{:?}", piles.xor());
         piles = action_prise.future_piles(piles);
 
         if piles.zero_partout() {
             return true;
         }
-        println!("{:?}", piles.xor());
+        // println!("{:?}", piles.xor());
         piles = piles.trouver_xor_zero();
     }
 }
