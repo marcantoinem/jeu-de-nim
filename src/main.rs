@@ -4,14 +4,14 @@ use crate::qlearning::Piles;
 mod qlearning;
 
 fn main() {
-    let piles = Piles([2, 5, 0, 0]);
+    let piles = Piles([2, 5, 4, 0]);
 
     if piles.xor() == 0 {
         println!("Le deuxième joueur devrait gagner.");
     } else {
         println!("Le premier joueur devrait gagner.");
     }
-    let pourcentage_victoire = piles.teste_fiabilité(100, 10000);
+    let pourcentage_victoire = piles.teste_fiabilité(1000, 10000);
     println!("{}%", pourcentage_victoire * 100.0);
 }
 

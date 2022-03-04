@@ -7,10 +7,10 @@ use rand::Rng;
 // -1 pour une défaite sur les actions
 
 const ALPHA: f32 = 0.9;
-const GAMMA: f32 = 0.5;
+const GAMMA: f32 = 2.0;
 const RÉCOMPENSE: f32 = 2.0;
-const MINIMUM: f32 = 0.0001;
 
+const MINIMUM: f32 = 0.0001;
 const NOMBRE_DE_PILE: usize = 4;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
