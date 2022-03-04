@@ -1,18 +1,20 @@
 use crate::qlearning::Piles;
+
 // use std::time::Instant;
 
 mod qlearning;
 
 fn main() {
-    let piles = Piles([2, 5, 4, 0]);
+    let piles = Piles([4, 8, 0, 0]);
 
     if piles.xor() == 0 {
         println!("Le deuxième joueur devrait gagner.");
     } else {
         println!("Le premier joueur devrait gagner.");
     }
-    let pourcentage_victoire = piles.teste_fiabilité(1000, 10000);
-    println!("{}%", pourcentage_victoire * 100.0);
+
+    let pourcent_victoire = piles.teste_fiabilité(10000, 1000000, 8);
+    println!("{}", pourcent_victoire);
 }
 
 //  001 = 1 = 2⁰

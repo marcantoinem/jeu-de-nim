@@ -1,6 +1,7 @@
 use derive_more::{Index, IndexMut, IntoIterator};
 use fxhash::FxHashMap;
 use rand::Rng;
+use std::thread;
 
 // Récompense
 // +1 pour une victoire sur toutes les actions
@@ -11,12 +12,12 @@ const GAMMA: f32 = 2.0;
 const RÉCOMPENSE: f32 = 2.0;
 
 const MINIMUM: f32 = 0.0001;
-const NOMBRE_DE_PILE: usize = 4;
+const NB_DE_PILE: usize = 4;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Action {
     pile: u8,
-    nombre_enleve: u8,
+    nb_enleve: u8,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -26,10 +27,10 @@ struct ActionAvecQualité {
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Index, IndexMut, IntoIterator)]
-pub struct Piles(pub [u8; NOMBRE_DE_PILE]);
+pub struct Piles(pub [u8; NB_DE_PILE]);
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Index, IndexMut, IntoIterator)]
-pub struct PilesAvecIndex([(u8, u8); NOMBRE_DE_PILE]);
+pub struct PilesAvecIndex([(u8, u8); NB_DE_PILE]);
 
 impl Piles {
     pub fn xor(&self) -> u8 {
@@ -41,7 +42,7 @@ impl Piles {
     }
 
     pub fn ajout_index(self) -> PilesAvecIndex {
-        let mut piles_avec_index = PilesAvecIndex([(0, 0); NOMBRE_DE_PILE]);
+        let mut piles_avec_index = PilesAvecIndex([(0, 0); NB_DE_PILE]);
         let mut index: u8 = 0;
         for pile in self.0 {
             piles_avec_index[index as usize] = (index, pile);
@@ -64,7 +65,7 @@ impl Piles {
     }
 
     fn trouver_xor_zero(self) -> Piles {
-        for index in 0..NOMBRE_DE_PILE {
+        for index in 0..NB_DE_PILE {
             if self[index] != 0 {
                 for i in 1..(self[index] + 1) {
                     let mut piles_futures = self;
@@ -82,7 +83,7 @@ impl Piles {
                 return piles_futures;
             }
         }
-        Piles([0; NOMBRE_DE_PILE])
+        Piles([0; NB_DE_PILE])
     }
 
     fn genere_action(self) -> Vec<ActionAvecQualité> {
@@ -93,7 +94,7 @@ impl Piles {
                 for i in 1..(pile + 1) {
                     let action = Action {
                         pile: pile_index,
-                        nombre_enleve: i,
+                        nb_enleve: i,
                     };
                     let action_avec_qualité = ActionAvecQualité {
                         action,
@@ -107,14 +108,33 @@ impl Piles {
         actions
     }
 
-    pub fn teste_fiabilité(self, nombre_partie: u32, nombre_modele: u32) -> f32 {
-        let mut nombre_victoire = 0;
-        for _ in 0..nombre_modele {
-            let hashmap = entraine(&self, nombre_partie);
+    fn teste_victoire(&self, nb_partie: u32, nb_modele: u32) -> u32 {
+        let mut nb_victoire = 0;
+        for _ in 0..nb_modele {
+            let hashmap = entraine(&self, nb_partie);
             // let temps_écoulé = maintenant.elapsed();
-            nombre_victoire += victoire_parfaite(self, hashmap) as u32;
+            nb_victoire += victoire_parfaite(*self, hashmap) as u32;
         }
-        nombre_victoire as f32/ nombre_modele as f32
+        nb_victoire
+    }
+
+    pub fn teste_fiabilité(self, nb_partie: u32, nb_modele: u32, nb_travailleur: u32) -> f32 {
+        let mut travailleurs = Vec::new();
+
+        for _ in 0..nb_travailleur {
+            let travailleur = thread::spawn(move || {
+                return self.teste_victoire(nb_partie, nb_modele / nb_travailleur);
+            });
+            travailleurs.push(travailleur);
+        }
+
+        let mut nb_victoire = 0;
+        for travailleur in travailleurs {
+            let resultat: u32 = travailleur.join().unwrap();
+            nb_victoire += resultat;
+        }
+
+        nb_victoire as f32 / nb_modele as f32
     }
 }
 
@@ -142,7 +162,7 @@ impl Action {
         let mut future_piles = piles.ajout_index();
         future_piles.trie_croissant();
         let pile_index = self.pile as usize;
-        future_piles[pile_index].1 -= self.nombre_enleve;
+        future_piles[pile_index].1 -= self.nb_enleve;
         future_piles.trie_original();
         future_piles.enleve_index()
     }
@@ -181,7 +201,7 @@ fn choisis_action(vecteur: &Vec<ActionAvecQualité>) -> Action {
     return vecteur[0].action;
 }
 
-pub fn entraine(piles: &Piles, nombre_partie: u32) -> FxHashMap<Piles, Action> {
+pub fn entraine(piles: &Piles, nb_partie: u32) -> FxHashMap<Piles, Action> {
     let mut dictionnaire_de_position = FxHashMap::default();
     let mut points = vec![];
     let mut nb_de_win = 0;
@@ -200,7 +220,7 @@ pub fn entraine(piles: &Piles, nombre_partie: u32) -> FxHashMap<Piles, Action> {
         }
     }
 
-    for nb in 1..=nombre_partie {
+    for nb in 1..=nb_partie {
         let mut piles = piles.clone();
         let mut partie = vec![];
         let win = loop {
@@ -277,7 +297,7 @@ fn action_avec_qualité_maximale(liste_action: Vec<ActionAvecQualité>) -> Actio
     if liste_action.len() == 0 {
         return Action {
             pile: 0,
-            nombre_enleve: 0,
+            nb_enleve: 0,
         };
     }
     let mut meilleure_action = &liste_action[0];
