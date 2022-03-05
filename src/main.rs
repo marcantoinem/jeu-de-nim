@@ -13,7 +13,7 @@ fn main() {
         println!("Le premier joueur devrait gagner.");
     }
 
-    let pourcent_victoire = piles.teste_fiabilité(10000, 1000000, 8);
+    let pourcent_victoire = piles.teste_fiabilité(10000, 10000, 8);
     println!("{}", pourcent_victoire);
 }
 

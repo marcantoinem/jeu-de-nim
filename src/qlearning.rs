@@ -10,7 +10,7 @@ use std::thread;
 const ALPHA: f32 = 0.9;
 const GAMMA: f32 = 2.0;
 const RÉCOMPENSE: f32 = 2.0;
-
+const _EPSILON: f32 = 0.05;
 const MINIMUM: f32 = 0.0001;
 const NB_DE_PILE: usize = 4;
 
@@ -21,7 +21,7 @@ pub struct Action {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-struct ActionAvecQualité {
+struct ActionQualité {
     action: Action,
     qualité: f32,
 }
@@ -30,7 +30,7 @@ struct ActionAvecQualité {
 pub struct Piles(pub [u8; NB_DE_PILE]);
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Index, IndexMut, IntoIterator)]
-pub struct PilesAvecIndex([(u8, u8); NB_DE_PILE]);
+pub struct PilesIndex([(u8, u8); NB_DE_PILE]);
 
 impl Piles {
     pub fn xor(&self) -> u8 {
@@ -41,8 +41,8 @@ impl Piles {
         xor
     }
 
-    pub fn ajout_index(self) -> PilesAvecIndex {
-        let mut piles_avec_index = PilesAvecIndex([(0, 0); NB_DE_PILE]);
+    pub fn ajout_index(self) -> PilesIndex {
+        let mut piles_avec_index = PilesIndex([(0, 0); NB_DE_PILE]);
         let mut index: u8 = 0;
         for pile in self.0 {
             piles_avec_index[index as usize] = (index, pile);
@@ -86,7 +86,7 @@ impl Piles {
         Piles([0; NB_DE_PILE])
     }
 
-    fn genere_action(self) -> Vec<ActionAvecQualité> {
+    fn genere_action(self) -> Vec<ActionQualité> {
         let mut actions = vec![];
         let mut pile_index = 0;
         for pile in self.0 {
@@ -96,7 +96,7 @@ impl Piles {
                         pile: pile_index,
                         nb_enleve: i,
                     };
-                    let action_avec_qualité = ActionAvecQualité {
+                    let action_avec_qualité = ActionQualité {
                         action,
                         qualité: 1.0,
                     };
@@ -138,7 +138,7 @@ impl Piles {
     }
 }
 
-impl PilesAvecIndex {
+impl PilesIndex {
     pub fn enleve_index(self) -> Piles {
         let mut piles = Piles([(0), (0), (0), (0)]);
         let mut index: u8 = 0;
@@ -168,21 +168,18 @@ impl Action {
     }
 }
 
-fn cherche_et_choisis_action(
-    piles: Piles,
-    dictionnaire_de_position: &FxHashMap<Piles, Vec<ActionAvecQualité>>,
-) -> Action {
+fn cherche_action(piles: Piles, hashmap: &FxHashMap<Piles, Vec<ActionQualité>>) -> Action {
     let mut piles_triées = piles.clone();
     piles_triées.trie_croissant();
 
-    let vecteur = dictionnaire_de_position
+    let vecteur = hashmap
         .get(&piles_triées)
         .expect("Erreur lors de la recherche de position.");
 
     choisis_action(vecteur)
 }
 
-fn choisis_action(vecteur: &Vec<ActionAvecQualité>) -> Action {
+fn choisis_action(vecteur: &Vec<ActionQualité>) -> Action {
     let mut somme = 0.0;
     for action_avec_qualité in vecteur {
         somme += action_avec_qualité.qualité;
@@ -201,8 +198,26 @@ fn choisis_action(vecteur: &Vec<ActionAvecQualité>) -> Action {
     return vecteur[0].action;
 }
 
+fn _choisis_action_epsilon(vecteur: &Vec<ActionQualité>) -> Action {
+    let mut rng = rand::thread_rng();
+    let valeur_aléatoire: f32 = rng.gen();
+
+    if valeur_aléatoire < _EPSILON {
+        let index = rng.gen_range(0..vecteur.len());
+        return vecteur[index].action;
+    } else {
+        return action_avec_qualité_maximale(vecteur);
+    }
+    // for action_avec_qualité in vecteur {
+    //     valeur_aléatoire -= action_avec_qualité.qualité / somme;
+    //     if valeur_aléatoire <= 0.0 {
+    //         return action_avec_qualité.action;
+    //     }
+    // }
+}
+
 pub fn entraine(piles: &Piles, nb_partie: u32) -> FxHashMap<Piles, Action> {
-    let mut dictionnaire_de_position = FxHashMap::default();
+    let mut hashmap = FxHashMap::default();
     let mut points = vec![];
     let mut nb_de_win = 0;
     let mut piles_triées = piles.clone();
@@ -214,7 +229,7 @@ pub fn entraine(piles: &Piles, nb_partie: u32) -> FxHashMap<Piles, Action> {
                 for l in k..(piles_triées[3] + 1) {
                     let piles = Piles([i, j, k, l]);
                     let actions = piles.genere_action();
-                    dictionnaire_de_position.insert(piles, actions);
+                    hashmap.insert(piles, actions);
                 }
             }
         }
@@ -229,7 +244,7 @@ pub fn entraine(piles: &Piles, nb_partie: u32) -> FxHashMap<Piles, Action> {
                 break false;
             }
 
-            let action_prise = cherche_et_choisis_action(piles, &dictionnaire_de_position);
+            let action_prise = cherche_action(piles, &hashmap);
             partie.push((piles, action_prise));
             piles = action_prise.future_piles(piles);
 
@@ -239,7 +254,7 @@ pub fn entraine(piles: &Piles, nb_partie: u32) -> FxHashMap<Piles, Action> {
                 break true;
             }
 
-            let action_prise = cherche_et_choisis_action(piles, &dictionnaire_de_position);
+            let action_prise = cherche_action(piles, &hashmap);
             piles = action_prise.future_piles(piles);
         };
 
@@ -251,7 +266,7 @@ pub fn entraine(piles: &Piles, nb_partie: u32) -> FxHashMap<Piles, Action> {
         for (piles, action_prise) in partie {
             let mut piles = piles;
             piles.trie_croissant();
-            let entrée = dictionnaire_de_position.get(&piles).unwrap();
+            let entrée = hashmap.get(&piles).unwrap();
             let mut index = 0;
             for element in entrée {
                 if element.action == action_prise {
@@ -260,7 +275,7 @@ pub fn entraine(piles: &Piles, nb_partie: u32) -> FxHashMap<Piles, Action> {
                 index += 1;
             }
 
-            let entrée = dictionnaire_de_position.entry(piles).or_default();
+            let entrée = hashmap.entry(piles).or_default();
             if win {
                 entrée[index].qualité = (1.0 - ALPHA) * entrée[index].qualité
                     + ALPHA * (RÉCOMPENSE + GAMMA * qualité_maximale(action_future));
@@ -276,10 +291,10 @@ pub fn entraine(piles: &Piles, nb_partie: u32) -> FxHashMap<Piles, Action> {
             action_future = entrée.clone();
         }
     }
-    nettoyer_hashmap(dictionnaire_de_position)
+    nettoyer_hashmap(hashmap)
 }
 
-fn qualité_maximale(liste_action: Vec<ActionAvecQualité>) -> f32 {
+fn qualité_maximale(liste_action: Vec<ActionQualité>) -> f32 {
     if liste_action.len() == 0 {
         return 1.0;
     }
@@ -293,7 +308,7 @@ fn qualité_maximale(liste_action: Vec<ActionAvecQualité>) -> f32 {
     meilleure_action.qualité
 }
 
-fn action_avec_qualité_maximale(liste_action: Vec<ActionAvecQualité>) -> Action {
+fn action_avec_qualité_maximale(liste_action: &Vec<ActionQualité>) -> Action {
     if liste_action.len() == 0 {
         return Action {
             pile: 0,
@@ -310,12 +325,10 @@ fn action_avec_qualité_maximale(liste_action: Vec<ActionAvecQualité>) -> Actio
     meilleure_action.action
 }
 
-fn nettoyer_hashmap(
-    hashmap: FxHashMap<Piles, Vec<ActionAvecQualité>>
-) -> FxHashMap<Piles, Action> {
+fn nettoyer_hashmap(hashmap: FxHashMap<Piles, Vec<ActionQualité>>) -> FxHashMap<Piles, Action> {
     let mut hashmap_nettoyé = FxHashMap::default();
     for (pile, liste_action) in hashmap {
-        hashmap_nettoyé.insert(pile, action_avec_qualité_maximale(liste_action));
+        hashmap_nettoyé.insert(pile, action_avec_qualité_maximale(&liste_action));
     }
     hashmap_nettoyé
 }
