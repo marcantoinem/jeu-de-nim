@@ -2,13 +2,9 @@ use derive_more::{Index, IndexMut, IntoIterator};
 use fxhash::FxHashMap;
 use rand::Rng;
 
-// Récompense
+// récompense
 // +1 pour une victoire sur toutes les actions
 // -1 pour une défaite sur les actions
-
-const ALPHA: f32 = 0.9;
-const GAMMA: f32 = 2.0;
-const RÉCOMPENSE: f32 = 2.0;
 
 const MINIMUM: f32 = 0.0001;
 const NOMBRE_DE_PILE: usize = 4;
@@ -107,14 +103,21 @@ impl Piles {
         actions
     }
 
-    pub fn teste_fiabilité(self, nombre_partie: u32, nombre_modele: u32) -> f32 {
+    pub fn teste_fiabilité(
+        self,
+        nombre_partie: u32,
+        nombre_modele: u32,
+        alpha: f32,
+        gamma: f32,
+        récompense: f32,
+    ) -> f32 {
         let mut nombre_victoire = 0;
         for _ in 0..nombre_modele {
-            let hashmap = entraine(&self, nombre_partie);
+            let hashmap = entraine(&self, nombre_partie, alpha, gamma, récompense);
             // let temps_écoulé = maintenant.elapsed();
             nombre_victoire += victoire_parfaite(self, hashmap) as u32;
         }
-        nombre_victoire as f32/ nombre_modele as f32
+        nombre_victoire as f32 / nombre_modele as f32
     }
 }
 
@@ -181,7 +184,13 @@ fn choisis_action(vecteur: &Vec<ActionAvecQualité>) -> Action {
     return vecteur[0].action;
 }
 
-pub fn entraine(piles: &Piles, nombre_partie: u32) -> FxHashMap<Piles, Action> {
+pub fn entraine(
+    piles: &Piles,
+    nombre_partie: u32,
+    alpha: f32,
+    gamma: f32,
+    récompense: f32,
+) -> FxHashMap<Piles, Action> {
     let mut dictionnaire_de_position = FxHashMap::default();
     let mut points = vec![];
     let mut nb_de_win = 0;
@@ -242,11 +251,11 @@ pub fn entraine(piles: &Piles, nombre_partie: u32) -> FxHashMap<Piles, Action> {
 
             let entrée = dictionnaire_de_position.entry(piles).or_default();
             if win {
-                entrée[index].qualité = (1.0 - ALPHA) * entrée[index].qualité
-                    + ALPHA * (RÉCOMPENSE + GAMMA * qualité_maximale(action_future));
+                entrée[index].qualité = (1.0 - alpha) * entrée[index].qualité
+                    + alpha * (récompense + gamma * qualité_maximale(action_future));
             } else if entrée[index].qualité > 0.0 {
-                entrée[index].qualité = (1.0 - ALPHA) * entrée[index].qualité
-                    + ALPHA * (-RÉCOMPENSE + GAMMA * qualité_maximale(action_future));
+                entrée[index].qualité = (1.0 - alpha) * entrée[index].qualité
+                    + alpha * (-récompense + gamma * qualité_maximale(action_future));
             }
 
             if entrée[index].qualité < 0.0 {
