@@ -7,9 +7,6 @@ use std::thread;
 // +1 pour une victoire sur toutes les actions
 // -1 pour une défaite sur les actions
 
-const ALPHA: f32 = 0.9;
-const GAMMA: f32 = 2.0;
-const RÉCOMPENSE: f32 = 2.0;
 const _EPSILON: f32 = 0.05;
 const MINIMUM: f32 = 0.0001;
 const NB_DE_PILE: usize = 4;
@@ -24,6 +21,14 @@ pub struct Action {
 struct ActionQualité {
     action: Action,
     qualité: f32,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Paramètres {
+    pub alpha: f32,
+    pub gamma: f32,
+    pub récompense: f32,
+    pub punition: f32,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Index, IndexMut, IntoIterator)]
@@ -108,22 +113,22 @@ impl Piles {
         actions
     }
 
-    fn teste_victoire(&self, nb_partie: u32, nb_modele: u32) -> u32 {
+    fn teste_victoire(&self, nb_partie: u32, nb_modele: u32, p: Paramètres) -> u32 {
         let mut nb_victoire = 0;
         for _ in 0..nb_modele {
-            let hashmap = entraine(&self, nb_partie);
+            let hashmap = entraine(&self, nb_partie, p);
             // let temps_écoulé = maintenant.elapsed();
             nb_victoire += victoire_parfaite(*self, hashmap) as u32;
         }
         nb_victoire
     }
 
-    pub fn teste_fiabilité(self, nb_partie: u32, nb_modele: u32, nb_travailleur: u32) -> f32 {
+    pub fn teste_fiabilité(self, nb_partie: u32, nb_modele: u32, nb_travailleur: u32, p: Paramètres) -> f32 {
         let mut travailleurs = Vec::new();
 
         for _ in 0..nb_travailleur {
             let travailleur = thread::spawn(move || {
-                return self.teste_victoire(nb_partie, nb_modele / nb_travailleur);
+                return self.teste_victoire(nb_partie, nb_modele / nb_travailleur, p);
             });
             travailleurs.push(travailleur);
         }
@@ -135,6 +140,19 @@ impl Piles {
         }
 
         nb_victoire as f32 / nb_modele as f32
+    }
+
+    pub fn difficulté(self) -> u32 {
+        let mut difficulté = 0;
+        let mut piles = self;
+        while piles.zero_partout() != true {
+            piles = piles.trouver_xor_zero();
+            difficulté += 1;
+        }
+        for index in 0..NB_DE_PILE {
+            difficulté += self[index as usize] as u32 * difficulté;
+        }
+        difficulté
     }
 }
 
@@ -216,7 +234,7 @@ fn _choisis_action_epsilon(vecteur: &Vec<ActionQualité>) -> Action {
     // }
 }
 
-pub fn entraine(piles: &Piles, nb_partie: u32) -> FxHashMap<Piles, Action> {
+pub fn entraine(piles: &Piles, nb_partie: u32, p: Paramètres) -> FxHashMap<Piles, Action> {
     let mut hashmap = FxHashMap::default();
     let mut points = vec![];
     let mut nb_de_win = 0;
@@ -277,11 +295,11 @@ pub fn entraine(piles: &Piles, nb_partie: u32) -> FxHashMap<Piles, Action> {
 
             let entrée = hashmap.entry(piles).or_default();
             if win {
-                entrée[index].qualité = (1.0 - ALPHA) * entrée[index].qualité
-                    + ALPHA * (RÉCOMPENSE + GAMMA * qualité_maximale(action_future));
+                entrée[index].qualité = (1.0 - p.alpha) * entrée[index].qualité
+                    + p.alpha * (p.récompense + p.gamma * qualité_maximale(action_future));
             } else if entrée[index].qualité > 0.0 {
-                entrée[index].qualité = (1.0 - ALPHA) * entrée[index].qualité
-                    + ALPHA * (-RÉCOMPENSE + GAMMA * qualité_maximale(action_future));
+                entrée[index].qualité = (1.0 - p.alpha) * entrée[index].qualité
+                    + p.alpha * (p.punition + p.gamma * qualité_maximale(action_future));
             }
 
             if entrée[index].qualité < 0.0 {
