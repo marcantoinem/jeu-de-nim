@@ -3,12 +3,7 @@ use fxhash::FxHashMap;
 use rand::Rng;
 use std::thread;
 
-// Récompense
-// +1 pour une victoire sur toutes les actions
-// -1 pour une défaite sur les actions
-
-const _EPSILON: f32 = 0.05;
-const MINIMUM: f32 = 0.0001;
+const MINIMUM: f32 = 0.001;
 const NB_DE_PILE: usize = 4;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -113,6 +108,17 @@ impl Piles {
         actions
     }
 
+    fn cherche_action(self, hashmap: &FxHashMap<Piles, Vec<ActionQualité>>) -> Action {
+        let mut piles_triées = self;
+        piles_triées.trie_croissant();
+
+        let vecteur = hashmap
+            .get(&piles_triées)
+            .expect("Erreur lors de la recherche de position.");
+
+        choisis_action(vecteur)
+    }
+
     fn teste_victoire(&self, nb_partie: u32, nb_modele: u32, p: Paramètres) -> u32 {
         let mut nb_victoire = 0;
         for _ in 0..nb_modele {
@@ -123,12 +129,18 @@ impl Piles {
         nb_victoire
     }
 
-    pub fn teste_fiabilité(self, nb_partie: u32, nb_modele: u32, nb_travailleur: u32, p: Paramètres) -> f32 {
+    pub fn teste_fiabilité(
+        self,
+        nb_partie: u32,
+        nb_modele_par_travailleur: u32,
+        nb_travailleur: u32,
+        p: Paramètres,
+    ) -> f32 {
         let mut travailleurs = Vec::new();
 
         for _ in 0..nb_travailleur {
             let travailleur = thread::spawn(move || {
-                return self.teste_victoire(nb_partie, nb_modele / nb_travailleur, p);
+                return self.teste_victoire(nb_partie, nb_modele_par_travailleur, p);
             });
             travailleurs.push(travailleur);
         }
@@ -139,7 +151,7 @@ impl Piles {
             nb_victoire += resultat;
         }
 
-        nb_victoire as f32 / nb_modele as f32
+        nb_victoire as f32 / (nb_modele_par_travailleur * nb_travailleur) as f32
     }
 
     pub fn difficulté(self) -> u32 {
@@ -186,17 +198,6 @@ impl Action {
     }
 }
 
-fn cherche_action(piles: Piles, hashmap: &FxHashMap<Piles, Vec<ActionQualité>>) -> Action {
-    let mut piles_triées = piles.clone();
-    piles_triées.trie_croissant();
-
-    let vecteur = hashmap
-        .get(&piles_triées)
-        .expect("Erreur lors de la recherche de position.");
-
-    choisis_action(vecteur)
-}
-
 fn choisis_action(vecteur: &Vec<ActionQualité>) -> Action {
     let mut somme = 0.0;
     for action_avec_qualité in vecteur {
@@ -216,29 +217,22 @@ fn choisis_action(vecteur: &Vec<ActionQualité>) -> Action {
     return vecteur[0].action;
 }
 
-fn _choisis_action_epsilon(vecteur: &Vec<ActionQualité>) -> Action {
-    let mut rng = rand::thread_rng();
-    let valeur_aléatoire: f32 = rng.gen();
-
-    if valeur_aléatoire < _EPSILON {
-        let index = rng.gen_range(0..vecteur.len());
-        return vecteur[index].action;
-    } else {
-        return action_avec_qualité_maximale(vecteur);
-    }
-    // for action_avec_qualité in vecteur {
-    //     valeur_aléatoire -= action_avec_qualité.qualité / somme;
-    //     if valeur_aléatoire <= 0.0 {
-    //         return action_avec_qualité.action;
-    //     }
-    // }
-}
+// Algorithme Epsilon-Greedy
+// fn choisis_action(vecteur: &Vec<ActionQualité>, epsilon: f32) -> Action {
+//     let mut rng = rand::thread_rng();
+//     let valeur_aléatoire: f32 = rng.gen();
+//
+//     if valeur_aléatoire < epsilon {
+//         let index = rng.gen_range(0..vecteur.len());
+//         return vecteur[index].action;
+//     } else {
+//         return action_avec_qualité_maximale(vecteur);
+//     }
+// }
 
 pub fn entraine(piles: &Piles, nb_partie: u32, p: Paramètres) -> FxHashMap<Piles, Action> {
     let mut hashmap = FxHashMap::default();
-    let mut points = vec![];
-    let mut nb_de_win = 0;
-    let mut piles_triées = piles.clone();
+    let mut piles_triées = *piles;
     piles_triées.trie_croissant();
 
     for i in 0..(piles_triées[0] + 1) {
@@ -253,30 +247,28 @@ pub fn entraine(piles: &Piles, nb_partie: u32, p: Paramètres) -> FxHashMap<Pile
         }
     }
 
-    for nb in 1..=nb_partie {
-        let mut piles = piles.clone();
+    for _ in 0..nb_partie {
+        let mut piles = *piles;
         let mut partie = vec![];
         let win = loop {
             if piles.zero_partout() {
-                // println!("Deuxième joueur");
+                // Victoire deuxième joueur
                 break false;
             }
 
-            let action_prise = cherche_action(piles, &hashmap);
+            let action_prise = piles.cherche_action(&hashmap);
             partie.push((piles, action_prise));
             piles = action_prise.future_piles(piles);
 
             if piles.zero_partout() {
-                // println!("Premier joueur");
-                nb_de_win += 1;
+                // Victoire premier joueur
                 break true;
             }
 
-            let action_prise = cherche_action(piles, &hashmap);
+            let action_prise = piles.cherche_action(&hashmap);
             piles = action_prise.future_piles(piles);
         };
 
-        points.push((nb as f32, nb_de_win as f32));
         partie.reverse();
 
         let mut action_future = vec![];
@@ -358,15 +350,12 @@ pub fn victoire_parfaite(piles_originales: Piles, hashmap: FxHashMap<Piles, Acti
             return false;
         }
 
-        let mut piles_triées = piles.clone().ajout_index();
+        let mut piles_triées = piles.ajout_index();
         piles_triées.trie_croissant();
 
-        let action_prise = match hashmap.get(&piles_triées.enleve_index()) {
-            Some(value) => value,
-            None => {
-                return false;
-            }
-        };
+        let action_prise = hashmap
+            .get(&piles_triées.enleve_index())
+            .expect("Pile et action inaccessibles dans le hashmap.");
         // println!("{:?}", piles.xor());
         piles = action_prise.future_piles(piles);
 
