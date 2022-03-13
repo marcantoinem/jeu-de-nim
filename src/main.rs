@@ -22,7 +22,7 @@ fn main() {
     };
 
     let difficulté = piles.difficulté();
-    let pourcent_victoire = piles.teste_fiabilité(500_000, 125, 8, paramètres);
+    let pourcent_victoire = piles.teste_fiabilité(400_000, 125, 8, paramètres);
     println!("{:.2}%, {}", pourcent_victoire * 100.0, difficulté);
 }
 

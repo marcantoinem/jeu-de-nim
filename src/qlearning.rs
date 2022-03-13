@@ -318,13 +318,9 @@ fn qualité_maximale_dbs(liste_action: Vec<ActionQualité>, beta: f64) -> f64 {
     // Source : https://www.ijcai.org/proceedings/2020/0276.pdf
     let mut dbs = 0.0;
     let mut somme = 0.0;
-
+    
     for action_qualité in &liste_action {
         somme += (beta * action_qualité.qualité).exp();
-    }
-
-    if somme > 1_000_000_000_000.0 || somme < 0.0000001 {
-        return qualité_maximale(liste_action);
     }
 
     for action_qualité in liste_action {
@@ -334,19 +330,22 @@ fn qualité_maximale_dbs(liste_action: Vec<ActionQualité>, beta: f64) -> f64 {
     dbs
 }
 
-fn qualité_maximale(liste_action: Vec<ActionQualité>) -> f64 {
-    if liste_action.len() == 0 {
-        return 2.0;
-    }
-    let mut meilleure_action = &liste_action[0];
-    for i in 0..liste_action.len() {
-        let next_action = &liste_action[i];
-        if next_action.qualité > meilleure_action.qualité {
-            meilleure_action = next_action;
-        }
-    }
-    meilleure_action.qualité
-}
+// fn qualité_maximale(liste_action: Vec<ActionQualité>) -> f64 {
+//     if liste_action.len() == 0 {
+//         return 2.0;
+//     }
+
+//     let mut meilleure_action = &liste_action[0];
+
+//     for i in 0..liste_action.len() {
+//         let next_action = &liste_action[i];
+//         if next_action.qualité > meilleure_action.qualité {
+//             meilleure_action = next_action;
+//         }
+//     }
+
+//     meilleure_action.qualité
+// }
 
 fn action_qualité_maximale(liste_action: &Vec<ActionQualité>) -> Action {
     if liste_action.len() == 0 {
