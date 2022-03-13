@@ -306,7 +306,7 @@ pub fn entraine(piles: &Piles, nb_partie: u32, p: Paramètres) -> FxHashMap<Pile
 
             action_future = entrée.clone();
         }
-        beta = p.beta / (nb_partie * nb_partie + 1) as f64 * (nb * nb) as f64;
+        beta = p.beta * (nb * nb) as f64 / (nb_partie * nb_partie) as f64;
     }
     nettoyer_hashmap(hashmap)
 }
@@ -320,16 +320,32 @@ fn qualité_maximale_dbs(liste_action: Vec<ActionQualité>, beta: f64) -> f64 {
     let mut somme = 0.0;
 
     for action_qualité in &liste_action {
-        // somme += action_qualité.qualité;
         somme += (beta * action_qualité.qualité).exp();
     }
 
+    if somme > 1_000_000_000_000.0 || somme < 0.0000001 {
+        return qualité_maximale(liste_action);
+    }
 
     for action_qualité in liste_action {
         dbs += (beta * action_qualité.qualité).exp() * action_qualité.qualité / somme;
-        // valeur_aléatoire -= (action_qualité.qualité/0.389).exp() / somme;
     }
+
     dbs
+}
+
+fn qualité_maximale(liste_action: Vec<ActionQualité>) -> f64 {
+    if liste_action.len() == 0 {
+        return 2.0;
+    }
+    let mut meilleure_action = &liste_action[0];
+    for i in 0..liste_action.len() {
+        let next_action = &liste_action[i];
+        if next_action.qualité > meilleure_action.qualité {
+            meilleure_action = next_action;
+        }
+    }
+    meilleure_action.qualité
 }
 
 fn action_qualité_maximale(liste_action: &Vec<ActionQualité>) -> Action {
