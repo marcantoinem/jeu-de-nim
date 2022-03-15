@@ -5,7 +5,11 @@ use crate::qlearning::{Paramètres, Piles};
 mod qlearning;
 
 fn main() {
+<<<<<<< HEAD
     let piles = Piles([5, 4, 3, 0]);
+=======
+    let piles = Piles([9, 8, 10, 2]);
+>>>>>>> c7952f7bd7ef50eb2c7109b7e0849b60cea48e58
 
     if piles.xor() == 0 {
         println!("Le deuxième joueur devrait gagner.");
@@ -20,6 +24,7 @@ fn main() {
         récompense: 1.0,
         punition: -1.0,
     };
+<<<<<<< HEAD
     for alpha in 6..=10 {
         for gamma in 6..=10 {
             for beta in 10..=14 {
@@ -39,6 +44,12 @@ fn main() {
             }
         }
     }
+=======
+
+    let difficulté = piles.difficulté();
+    let pourcent_victoire = piles.teste_fiabilité(500_000, 125, 8, paramètres);
+    println!("{:.2}%, {}", pourcent_victoire * 100.0, difficulté);
+>>>>>>> c7952f7bd7ef50eb2c7109b7e0849b60cea48e58
 }
 
 //  001 = 1 = 2⁰
