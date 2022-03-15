@@ -4,6 +4,7 @@ use rand::Rng;
 use std::thread;
 
 const MINIMUM: f64 = 0.001;
+const MAXIMUM: f64 = 50.0;
 const NB_DE_PILE: usize = 4;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -68,7 +69,7 @@ impl Piles {
     fn trouver_xor_zero(self) -> Piles {
         for index in 0..NB_DE_PILE {
             if self[index] != 0 {
-                for i in 1..(self[index] + 1) {
+                for i in 1..=self[index] {
                     let mut piles_futures = self;
                     piles_futures[index] -= i;
                     if piles_futures.xor() == 0 {
@@ -92,7 +93,7 @@ impl Piles {
         let mut pile_index = 0;
         for pile in self.0 {
             if pile != 0 {
-                for i in 1..(pile + 1) {
+                for i in 1..=pile {
                     let action = Action {
                         pile: pile_index,
                         nb_enleve: i,
@@ -238,10 +239,10 @@ pub fn entraine(piles: &Piles, nb_partie: u32, p: Paramètres) -> FxHashMap<Pile
     let mut piles_triées = *piles;
     piles_triées.trie_croissant();
 
-    for i in 0..(piles_triées[0] + 1) {
-        for j in i..(piles_triées[1] + 1) {
-            for k in j..(piles_triées[2] + 1) {
-                for l in k..(piles_triées[3] + 1) {
+    for i in 0..=piles_triées[0] {
+        for j in i..=piles_triées[1] {
+            for k in j..=piles_triées[2] {
+                for l in k..=piles_triées[3] {
                     let piles = Piles([i, j, k, l]);
                     let actions = piles.genere_action();
                     hashmap.insert(piles, actions);
@@ -302,6 +303,8 @@ pub fn entraine(piles: &Piles, nb_partie: u32, p: Paramètres) -> FxHashMap<Pile
 
             if entrée[index].qualité < MINIMUM {
                 entrée[index].qualité = MINIMUM
+            } else if entrée[index].qualité > MAXIMUM {
+                entrée[index].qualité = MAXIMUM;
             }
 
             action_future = entrée.clone();
@@ -343,7 +346,6 @@ fn qualité_maximale_dbs(liste_action: Vec<ActionQualité>, beta: f64) -> f64 {
 //             meilleure_action = next_action;
 //         }
 //     }
-
 //     meilleure_action.qualité
 // }
 
