@@ -4,8 +4,8 @@ use rand::Rng;
 use std::thread;
 
 const MINIMUM: f64 = 0.001;
-const MAXIMUM: f64 = 50.0;
-const NB_DE_PILE: usize = 4;
+const MAXIMUM: f64 = 40.0;
+const NB_DE_PILE: usize = 8;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Action {
@@ -121,7 +121,7 @@ impl Piles {
         choisis_action(vecteur)
     }
 
-    fn teste_victoire(&self, nb_partie: u32, nb_modele: u32, p: Paramètres) -> u32 {
+    fn teste_victoire(&self, nb_partie: u64, nb_modele: u32, p: Paramètres) -> u32 {
         let mut nb_victoire = 0;
         for _ in 0..nb_modele {
             let hashmap = entraine(&self, nb_partie, p);
@@ -133,7 +133,7 @@ impl Piles {
 
     pub fn teste_fiabilité(
         self,
-        nb_partie: u32,
+        nb_partie: u64,
         nb_modele_par_travailleur: u32,
         nb_travailleur: u32,
         p: Paramètres,
@@ -156,17 +156,17 @@ impl Piles {
         nb_victoire as f64 / (nb_modele_par_travailleur * nb_travailleur) as f64
     }
 
-    pub fn difficulté(self) -> u32 {
-        let mut difficulté = 0;
+    pub fn nb_coup(self) -> u32 {
+        let mut nb_coup = 0;
         let mut piles = self;
         while piles.zero_partout() != true {
             piles = piles.trouver_xor_zero();
-            difficulté += 1;
+            nb_coup += 1;
         }
-        for index in 0..NB_DE_PILE {
-            difficulté += self[index as usize] as u32 * difficulté;
-        }
-        difficulté
+        // for index in 0..NB_DE_PILE {
+        //     nb_coup += self[index as usize] as u32 * nb_coup;
+        // }
+        nb_coup
     }
 }
 
@@ -234,7 +234,7 @@ fn choisis_action(vecteur: &Vec<ActionQualité>) -> Action {
 //     }
 // }
 
-pub fn entraine(piles: &Piles, nb_partie: u32, p: Paramètres) -> FxHashMap<Piles, Action> {
+pub fn entraine(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Piles, Action> {
     let mut hashmap = FxHashMap::default();
     let mut piles_triées = *piles;
     piles_triées.trie_croissant();
@@ -243,13 +243,22 @@ pub fn entraine(piles: &Piles, nb_partie: u32, p: Paramètres) -> FxHashMap<Pile
         for j in i..=piles_triées[1] {
             for k in j..=piles_triées[2] {
                 for l in k..=piles_triées[3] {
-                    let piles = Piles([i, j, k, l]);
-                    let actions = piles.genere_action();
-                    hashmap.insert(piles, actions);
+                    for m in l..=piles_triées[4] {
+                        for n in m..=piles_triées[5] {
+                            for o in n..=piles_triées[6] {
+                                for p in o..=piles_triées[7] {
+                                    let piles = Piles([i, j, k, l, m, n, o, p]);
+                                    let actions = piles.genere_action();
+                                    hashmap.insert(piles, actions);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
     }
+    
 
     let mut beta = 0.0;
 
@@ -319,18 +328,18 @@ fn qualité_maximale_dbs(liste_action: Vec<ActionQualité>, beta: f64) -> f64 {
         return 1.0;
     }
     // Source : https://www.ijcai.org/proceedings/2020/0276.pdf
-    let mut dbs = 0.0;
-    let mut somme = 0.0;
+    let mut dbs: f64 = 0.0;
+    let mut somme: f64 = 0.0;
     
     for action_qualité in &liste_action {
-        somme += (beta * action_qualité.qualité).exp();
+        somme += (beta * action_qualité.qualité as f64).exp();
     }
 
     for action_qualité in liste_action {
-        dbs += (beta * action_qualité.qualité).exp() * action_qualité.qualité / somme;
+        dbs += (beta * action_qualité.qualité as f64).exp() * action_qualité.qualité / somme;
     }
 
-    dbs
+    dbs as f64
 }
 
 // fn qualité_maximale(liste_action: Vec<ActionQualité>) -> f64 {
