@@ -1,11 +1,10 @@
 use crate::qlearning::{Paramètres, Piles};
+use std::time::Instant;
 
-// use std::time::Instant;
-
-mod qlearning;
+pub mod qlearning;
 
 fn main() {
-    let piles = Piles([2, 19, 0, 0, 0, 0, 0, 0]);
+    let piles = Piles([5, 6, 0, 0, 0, 0, 0, 0]);
 
     if piles.xor() == 0 {
         println!("Le deuxième joueur devrait gagner.");
@@ -20,10 +19,25 @@ fn main() {
         récompense: 1.0,
         punition: -1.0,
     };
+    let nb_modele_par_travailleur = 125;
+    let nb_travailleur = 8;
 
+    let avant = Instant::now();
+    let pourcent_victoire = piles.teste_fiabilité(
+        10_000,
+        nb_modele_par_travailleur,
+        nb_travailleur,
+        paramètres,
+    );
+    let chrono = avant.elapsed().as_millis();
     let difficulté = piles.nb_coup();
-    let pourcent_victoire = piles.teste_fiabilité(100_000, 25, 8, paramètres);
-    println!("{:.2}%, {}", pourcent_victoire * 100.0, difficulté);
+    println!(
+        "{:.2}% sur {} modèles entrainés, {} coups nécessaires, {} ms",
+        pourcent_victoire * 100.0,
+        nb_modele_par_travailleur * nb_travailleur,
+        difficulté,
+        chrono
+    );
 }
 
 //  001 = 1 = 2⁰
