@@ -1,7 +1,7 @@
 use derive_more::{Index, IndexMut, IntoIterator};
 use fxhash::FxHashMap;
 use rand::Rng;
-use std::thread;
+use std::{thread, fmt};
 
 const MINIMUM: f64 = 0.001;
 const MAXIMUM: f64 = 40.0;
@@ -31,6 +31,16 @@ pub struct Paramètres {
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Index, IndexMut, IntoIterator)]
 pub struct Piles(pub [u8; NB_DE_PILE]);
 
+impl fmt::Display for Piles {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut piles_str = String::new();
+        for pile in self.0 {
+            piles_str.push_str(&format!(" {} ", pile))
+        }
+        write!(f, "{}", piles_str)
+    }
+}
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Index, IndexMut, IntoIterator)]
 pub struct PilesIndex([(u8, u8); NB_DE_PILE]);
 
@@ -45,10 +55,8 @@ impl Piles {
 
     pub fn ajout_index(self) -> PilesIndex {
         let mut piles_avec_index = PilesIndex([(0, 0); NB_DE_PILE]);
-        let mut index: u8 = 0;
-        for pile in self.0 {
-            piles_avec_index[index as usize] = (index, pile);
-            index += 1;
+        for (index, pile) in self.0.into_iter().enumerate() {
+            piles_avec_index[index] = (index as u8, pile);
         }
         piles_avec_index
     }
@@ -90,18 +98,16 @@ impl Piles {
 
     fn genere_action(self) -> FxHashMap<Action, f64> {
         let mut actions = FxHashMap::default();
-        let mut pile_index = 0;
-        for pile in self.0 {
+        for (index, pile) in self.0.into_iter().enumerate() {
             if pile != 0 {
                 for i in 1..=pile {
                     let action = Action {
-                        pile: pile_index,
+                        pile: index as u8,
                         nb_enleve: i,
                     };
                     actions.insert(action, 1.0);
                 }
             }
-            pile_index += 1;
         }
         actions
     }
@@ -147,8 +153,7 @@ impl Piles {
     fn teste_victoire(&self, nb_partie: u64, nb_modèle: u32, p: Paramètres) -> u32 {
         let mut nb_victoire = 0;
         for _ in 0..nb_modèle {
-            let hashmap = entraine(&self, nb_partie, p);
-            // let temps_écoulé = maintenant.elapsed();
+            let hashmap = entraine(self, nb_partie, p);
             nb_victoire += victoire_parfaite(*self, hashmap) as u32;
         }
         nb_victoire
@@ -182,24 +187,37 @@ impl Piles {
     pub fn nb_coup(self) -> u32 {
         let mut nb_coup = 0;
         let mut piles = self;
-        while piles.zero_partout() != true {
+        while !piles.zero_partout() {
             piles = piles.trouver_xor_zero();
             nb_coup += 1;
         }
-        // for index in 0..NB_DE_PILE {
-        //     nb_coup += self[index as usize] as u32 * nb_coup;
-        // }
         nb_coup
+    }
+
+    fn _additionne(self) -> u32 {
+        let mut somme = 0;
+        for pile in self {
+            somme += pile as u32;
+        }
+        somme
+    }
+
+    fn _max(self) -> u8 {
+        let mut max = 0;
+        for pile in self {
+            if pile > max {
+                max = pile;
+            }
+        }
+        max
     }
 }
 
 impl PilesIndex {
     pub fn enleve_index(self) -> Piles {
         let mut piles = Piles([(0); NB_DE_PILE]);
-        let mut index: u8 = 0;
-        for (_, pile) in self {
-            piles[index as usize] = pile;
-            index += 1;
+        for (index, (_, pile)) in self.into_iter().enumerate() {
+            piles[index] = pile;
         }
         piles
     }
@@ -216,8 +234,8 @@ impl Action {
     pub fn future_piles(self, piles: Piles) -> Piles {
         let mut future_piles = piles.ajout_index();
         future_piles.trie_croissant();
-        let pile_index = self.pile as usize;
-        future_piles[pile_index].1 -= self.nb_enleve;
+        let index = self.pile as usize;
+        future_piles[index].1 -= self.nb_enleve;
         future_piles.trie_original();
         future_piles.enleve_index()
     }
@@ -227,7 +245,6 @@ fn choisis_action(hashmap: &FxHashMap<Action, f64>) -> &Action {
     let mut somme = 0.0;
     for entrée in hashmap {
         somme += entrée.1;
-        // somme += (action_qualité.qualité/0.389).exp();
     }
 
     let mut rng = rand::thread_rng();
@@ -235,14 +252,12 @@ fn choisis_action(hashmap: &FxHashMap<Action, f64>) -> &Action {
 
     for entrée in hashmap {
         valeur_aléatoire -= entrée.1 / somme;
-        // valeur_aléatoire -= (action_qualité.qualité/0.389).exp() / somme;
         if valeur_aléatoire <= 0.0 {
             return entrée.0;
         }
     }
 
     hashmap.keys().next().unwrap()
-    // return hashmap.
 }
 
 // Algorithme Epsilon-Greedy
@@ -260,7 +275,7 @@ fn choisis_action(hashmap: &FxHashMap<Action, f64>) -> &Action {
 
 pub fn entraine(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Piles, Action> {
     let mut hashmap = piles.genere_hashmap();
-    let mut beta = 0.0;
+    let mut beta = 0.0;   
 
     for nb in 0..nb_partie {
         let mut piles = *piles;
@@ -291,18 +306,9 @@ pub fn entraine(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Pile
         for (piles, action_prise) in partie {
             let mut piles = piles;
             piles.trie_croissant();
-
-            // let mut index = 0;
-
-            // for element in entrée {
-            //     if element.action == action_prise {
-            //         break;
-            //     }
-            //     index += 1;
-            // }
             let entrée = hashmap.entry(piles).or_default();
-            // let qualité = entrée.get(action_prise).unwrap();
             let qualité = entrée.entry(action_prise).or_default();
+
             if win {
                 *qualité =
                     (1.0 - p.alpha) * *qualité + p.alpha * (p.récompense + p.gamma * qualité_dbs);
@@ -316,6 +322,68 @@ pub fn entraine(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Pile
             } else if *qualité > MAXIMUM {
                 *qualité = MAXIMUM;
             }
+
+            let entrée = hashmap.get(&piles).unwrap();
+            qualité_dbs = qualité_maximale_dbs(entrée, beta)
+        }
+        beta = p.beta * (nb * nb) as f64 / (nb_partie * nb_partie) as f64;
+    }
+    nettoyer_hashmap(hashmap)
+}
+
+pub fn entraine_affiche(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Piles, Action> {
+    let mut hashmap = piles.genere_hashmap();
+    let mut beta = 0.0;   
+
+    for nb in 0..nb_partie {
+        println!("Partie {}:", nb + 1);
+        let mut piles = *piles;
+        let mut partie = vec![];
+        let win = loop {
+            if piles.zero_partout() {
+                // Victoire deuxième joueur
+                break false;
+            }
+
+            let action_prise = piles.cherche_action(&hashmap);
+            partie.push((piles, *action_prise));
+            piles = action_prise.future_piles(piles);
+
+            if piles.zero_partout() {
+                // Victoire premier joueur
+                break true;
+            }
+
+            let action_prise = piles.cherche_action(&hashmap);
+            piles = action_prise.future_piles(piles);
+        };
+
+        partie.reverse();
+
+        let mut qualité_dbs = 1.0;
+
+        for (piles, action_prise) in partie {
+            let mut piles = piles;
+            piles.trie_croissant();
+            let entrée = hashmap.entry(piles).or_default();
+            let qualité = entrée.entry(action_prise).or_default();
+
+            if win {
+                *qualité =
+                    (1.0 - p.alpha) * *qualité + p.alpha * (p.récompense + p.gamma * qualité_dbs);
+            } else {
+                *qualité =
+                    (1.0 - p.alpha) * *qualité + p.alpha * (p.punition + p.gamma * qualité_dbs);
+            }
+
+            if *qualité < MINIMUM {
+                *qualité = MINIMUM
+            } else if *qualité > MAXIMUM {
+                *qualité = MAXIMUM;
+            }
+
+            println!("Piles: {}, Action: {}, Qualité: {:.3}", piles, action_prise.future_piles(piles), *qualité);
+
             let entrée = hashmap.get(&piles).unwrap();
             qualité_dbs = qualité_maximale_dbs(entrée, beta)
         }
@@ -325,7 +393,7 @@ pub fn entraine(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Pile
 }
 
 fn qualité_maximale_dbs(liste_action: &FxHashMap<Action, f64>, beta: f64) -> f64 {
-    if liste_action.len() == 0 {
+    if liste_action.is_empty() {
         return 1.0;
     }
     // Source : https://www.ijcai.org/proceedings/2020/0276.pdf
@@ -344,7 +412,7 @@ fn qualité_maximale_dbs(liste_action: &FxHashMap<Action, f64>, beta: f64) -> f6
 }
 
 fn action_qualité_maximale(liste_action: FxHashMap<Action, f64>) -> Action {
-    if liste_action.len() == 0 {
+    if liste_action.is_empty() {
         return Action {
             pile: 0,
             nb_enleve: 0,
@@ -391,3 +459,4 @@ pub fn victoire_parfaite(piles_originales: Piles, hashmap: FxHashMap<Piles, Acti
         piles = piles.trouver_xor_zero();
     }
 }
+
