@@ -13,12 +13,6 @@ pub struct Action {
     nb_enleve: u8,
 }
 
-// #[derive(Copy, Clone, Debug, PartialEq)]
-// struct ActionQualité {
-//     action: Action,
-//     qualité: f64,
-// }
-
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Paramètres {
     pub alpha: f64,
