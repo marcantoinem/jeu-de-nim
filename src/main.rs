@@ -4,7 +4,7 @@ use std::time::Instant;
 pub mod qlearning;
 
 fn main() {
-    let piles = Piles([8, 7, 6, 5, 0, 0, 0, 0]);
+    let piles = Piles([8, 7, 6, 5, 4, 3, 2, 1]);
 
     if piles.xor() == 0 {
         println!("Le deuxième joueur devrait gagner.");
@@ -12,8 +12,8 @@ fn main() {
         println!("Le premier joueur devrait gagner.");
     }
 
-    let nb_partie = 500_000;
-    let nb_modèle = 10;
+    let nb_partie = 1_000_000;
+    let nb_modèle = 25;
     let nb_travailleur = 8;
     let paramètres = Paramètres {
         alpha: 0.9,

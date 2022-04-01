@@ -255,23 +255,41 @@ fn choisis_action(hashmap: &FxHashMap<Action, f64>) -> &Action {
 }
 
 // Algorithme Epsilon-Greedy
-// fn choisis_action(vecteur: &Vec<ActionQualité>, epsilon: f64) -> Action {
+// fn choisis_action(hashmap: &FxHashMap<Action, f64>/* , epsilon: f64*/) -> &Action {
+//     let vecteur = Vec::from_iter(hashmap.iter());
 //     let mut rng = rand::thread_rng();
 //     let valeur_aléatoire: f64 = rng.gen();
-//
-//     if valeur_aléatoire < epsilon {
+
+//     if valeur_aléatoire < 0.1 {
 //         let index = rng.gen_range(0..vecteur.len());
-//         return vecteur[index].action;
+//         return vecteur[index].0;
 //     } else {
-//         return action_qualité_maximale(vecteur);
+//         return &vecteur_max(&vecteur);
 //     }
+// }
+
+// fn vecteur_max<'a>(liste_action: &Vec<(&'a Action, &f64)>) -> &'a Action {
+//     if liste_action.is_empty() {
+//         return &Action {
+//             pile: 0,
+//             nb_enleve: 0,
+//         };
+//     }
+//     let mut iterator = liste_action.into_iter();
+//     let mut meilleure_action = iterator.next().unwrap();
+//     for action_qualité in iterator {
+//         if action_qualité.1 > meilleure_action.1 {
+//             meilleure_action = action_qualité;
+//         }
+//     }
+//     &meilleure_action.0
 // }
 
 pub fn entraine(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Piles, Action> {
     let mut hashmap = piles.genere_hashmap();
-    let mut beta = 0.0;   
+    // let mut beta = 0.0;   
 
-    for nb in 0..nb_partie {
+    for _nb in 0..nb_partie {
         let mut piles = *piles;
         let mut partie = vec![];
         let win = loop {
@@ -318,9 +336,11 @@ pub fn entraine(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Pile
             }
 
             let entrée = hashmap.get(&piles).unwrap();
-            qualité_dbs = qualité_maximale_dbs(entrée, beta)
+            qualité_dbs = qualité_maximale(entrée);
         }
-        beta = p.beta * (nb * nb) as f64 / (nb_partie * nb_partie) as f64;
+        // beta = p.beta - p.beta * (-50.0 / nb_partie as f64 * (nb as f64)).exp();
+        // beta = p.beta * nb as f64 / nb_partie as f64;
+        // beta = p.beta * (nb * nb) as f64 / (nb_partie * nb_partie) as f64;
     }
     nettoyer_hashmap(hashmap)
 }
@@ -379,7 +399,7 @@ pub fn entraine_affiche(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHash
             println!("Piles: {}, Action: {}, Qualité: {:.3}", piles, action_prise.future_piles(piles), *qualité);
 
             let entrée = hashmap.get(&piles).unwrap();
-            qualité_dbs = qualité_maximale_dbs(entrée, beta)
+            qualité_dbs = qualité_maximale_dbs(entrée, beta);
         }
         beta = p.beta * (nb * nb) as f64 / (nb_partie * nb_partie) as f64;
     }
@@ -403,6 +423,20 @@ fn qualité_maximale_dbs(liste_action: &FxHashMap<Action, f64>, beta: f64) -> f6
     }
 
     dbs as f64
+}
+
+fn qualité_maximale(liste_action: &FxHashMap<Action, f64>) -> f64 {
+    if liste_action.is_empty() {
+        return 1.0
+    }
+    let mut iterator = liste_action.into_iter();
+    let mut meilleure_action = iterator.next().unwrap();
+    for action_qualité in iterator {
+        if action_qualité.1 > meilleure_action.1 {
+            meilleure_action = action_qualité;
+        }
+    }
+    *meilleure_action.1
 }
 
 fn action_qualité_maximale(liste_action: FxHashMap<Action, f64>) -> Action {
