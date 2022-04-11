@@ -1,10 +1,10 @@
-use crate::qlearning::{Paramètres, Piles};
+use crate::qlearning::piles_et_action::{Paramètres, Piles};
 use num_format::{Locale, ToFormattedString};
 use std::time::Instant;
 pub mod qlearning;
 
 fn main() {
-    let piles = Piles([8, 7, 6, 5, 4, 3, 2, 1]);
+    let piles = Piles([4, 3, 2, 1, 0, 0, 0, 0]);
 
     if piles.xor() == 0 {
         println!("Le deuxième joueur devrait gagner.");
@@ -12,8 +12,8 @@ fn main() {
         println!("Le premier joueur devrait gagner.");
     }
 
-    let nb_partie = 1_000_000;
-    let nb_modèle = 25;
+    let nb_partie = 5_000;
+    let nb_modèle = 125;
     let nb_travailleur = 8;
     let paramètres = Paramètres {
         alpha: 0.9,
@@ -24,7 +24,7 @@ fn main() {
     };
 
     let avant = Instant::now();
-    let pourcent = piles.teste_fiabilité(nb_partie, nb_modèle, nb_travailleur, paramètres);
+    let pourcent = qlearning::teste_fiabilité(piles, nb_partie, nb_modèle, nb_travailleur, paramètres);
     let chrono = avant.elapsed().as_millis().to_formatted_string(&Locale::fr_CA);
 
     let modèles = (nb_modèle * nb_travailleur).to_formatted_string(&Locale::fr_CA);
@@ -40,3 +40,8 @@ fn main() {
         chrono
     );
 }
+
+// 29 coups nécessaires pour Piles([8, 7, 6, 5, 4, 3, 2, 1]) à 2 000 000 parties
+// 60% pour modèle DBS-Qlearning t
+// 55% pour modèle DBS-Qlearning t²
+// 30% pour modèle Qlearning classique
