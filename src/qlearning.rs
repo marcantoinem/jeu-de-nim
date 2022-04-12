@@ -1,5 +1,5 @@
+use crate::qlearning::piles_et_action::{Action, Paramètres, Piles};
 use fxhash::FxHashMap;
-use crate::qlearning::piles_et_action::{Paramètres, Piles, Action};
 use std::thread;
 
 pub mod piles_et_action;
@@ -7,74 +7,9 @@ pub mod piles_et_action;
 const MINIMUM: f64 = 0.001;
 const MAXIMUM: f64 = 40.0;
 
-pub fn teste_fiabilité(
-    piles: Piles,
-    nb_partie: u64,
-    nb_modèle: u32,
-    nb_travailleur: u32,
-    p: Paramètres,
-) -> f64 {
-    let mut travailleurs = Vec::new();
-
-    for _ in 0..nb_travailleur {
-        let travailleur = thread::spawn(move || {
-            return teste_victoire(&piles, nb_partie, nb_modèle, p);
-        });
-        travailleurs.push(travailleur);
-    }
-
-    let mut nb_victoire = 0;
-    for travailleur in travailleurs {
-        let resultat: u32 = travailleur.join().unwrap();
-        nb_victoire += resultat;
-    }
-
-    nb_victoire as f64 / (nb_modèle * nb_travailleur) as f64
-}
-
-pub fn teste_victoire(piles: &Piles, nb_partie: u64, nb_modèle: u32, p: Paramètres) -> u32 {
-    let mut nb_victoire = 0;
-    for _ in 0..nb_modèle {
-        let hashmap = entraine(piles, nb_partie, p);
-        nb_victoire += victoire_parfaite(*piles, hashmap) as u32;
-    }
-    nb_victoire
-}
-
-// Algorithme Epsilon-Greedy
-// fn choisis_action(hashmap: &FxHashMap<Action, f64> , epsilon: f64) -> &Action {
-//     let vecteur = Vec::from_iter(hashmap.iter());
-//     let mut rng = rand::thread_rng();
-//     let valeur_aléatoire: f64 = rng.gen();
-
-//     if valeur_aléatoire < epsilon {
-//         let index = rng.gen_range(0..vecteur.len());
-//         return vecteur[index].0;
-//     } else {
-//         return &vecteur_max(&vecteur);
-//     }
-// }
-
-// fn vecteur_max<'a>(liste_action: &Vec<(&'a Action, &f64)>) -> &'a Action {
-//     if liste_action.is_empty() {
-//         return &Action {
-//             pile: 0,
-//             nb_enleve: 0,
-//         };
-//     }
-//     let mut iterator = liste_action.into_iter();
-//     let mut meilleure_action = iterator.next().unwrap();
-//     for action_qualité in iterator {
-//         if action_qualité.1 > meilleure_action.1 {
-//             meilleure_action = action_qualité;
-//         }
-//     }
-//     &meilleure_action.0
-// }
-
 pub fn entraine(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Piles, Action> {
     let mut hashmap = piles.genere_hashmap();
-    let mut _beta = 0.0;   
+    let mut _beta = 0.0;
 
     for _nb in 0..nb_partie {
         let mut piles = *piles;
@@ -125,7 +60,7 @@ pub fn entraine(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Pile
             let entrée = hashmap.get(&piles).unwrap();
             qualité_dbs = _qualité_maximale(entrée);
         }
-        // beta = p.beta - p.beta * (-50.0 / nb_partie as f64 * (_nb as f64)).exp();
+        // _beta = p.beta - p.beta * (-50.0 / nb_partie as f64 * (_nb as f64)).exp();
         _beta = p.beta * _nb as f64 / nb_partie as f64;
         // _beta = p.beta * (_nb * _nb) as f64 / (nb_partie * nb_partie) as f64;
     }
@@ -134,7 +69,6 @@ pub fn entraine(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Pile
 
 pub fn entraine_affiche(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Piles, Action> {
     let mut hashmap = piles.genere_hashmap();
-    let mut beta = 0.0;   
 
     for nb in 0..nb_partie {
         println!("Partie {}:", nb + 1);
@@ -183,17 +117,21 @@ pub fn entraine_affiche(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHash
                 *qualité = MAXIMUM;
             }
 
-            println!("Piles: {}, Action: {}, Qualité: {:.3}", piles, action_prise.future_piles(piles), *qualité);
+            println!(
+                "Piles: {}, Action: {}, Qualité: {:.3}",
+                piles,
+                action_prise.future_piles(piles),
+                *qualité
+            );
 
             let entrée = hashmap.get(&piles).unwrap();
-            qualité_dbs = _qualité_maximale_dbs(entrée, beta);
+            qualité_dbs = _qualité_maximale(entrée);
         }
-        beta = p.beta * (nb * nb) as f64 / (nb_partie * nb_partie) as f64;
     }
     nettoyer_hashmap(hashmap)
 }
 
-fn _qualité_maximale_dbs(liste_action: &FxHashMap<Action, f64>, beta: f64) -> f64 {
+fn _qualité_maximale_régularisée(liste_action: &FxHashMap<Action, f64>, beta: f64) -> f64 {
     if liste_action.is_empty() {
         return 1.0;
     }
@@ -214,7 +152,7 @@ fn _qualité_maximale_dbs(liste_action: &FxHashMap<Action, f64>, beta: f64) -> f
 
 fn _qualité_maximale(liste_action: &FxHashMap<Action, f64>) -> f64 {
     if liste_action.is_empty() {
-        return 1.0
+        return 1.0;
     }
     let mut iterator = liste_action.into_iter();
     let mut meilleure_action = iterator.next().unwrap();
@@ -275,3 +213,36 @@ pub fn victoire_parfaite(piles_originales: Piles, hashmap: FxHashMap<Piles, Acti
     }
 }
 
+pub fn teste_victoire(piles: &Piles, nb_partie: u64, nb_modèle: u32, p: Paramètres) -> u32 {
+    let mut nb_victoire = 0;
+    for _ in 0..nb_modèle {
+        let hashmap = entraine(piles, nb_partie, p);
+        nb_victoire += victoire_parfaite(*piles, hashmap) as u32;
+    }
+    nb_victoire
+}
+
+pub fn teste_fiabilité(
+    piles: Piles,
+    nb_partie: u64,
+    nb_modèle: u32,
+    nb_travailleur: u32,
+    p: Paramètres,
+) -> f64 {
+    let mut travailleurs = Vec::new();
+
+    for _ in 0..nb_travailleur {
+        let travailleur = thread::spawn(move || {
+            return teste_victoire(&piles, nb_partie, nb_modèle, p);
+        });
+        travailleurs.push(travailleur);
+    }
+
+    let mut nb_victoire = 0;
+    for travailleur in travailleurs {
+        let resultat: u32 = travailleur.join().unwrap();
+        nb_victoire += resultat;
+    }
+
+    nb_victoire as f64 / (nb_modèle * nb_travailleur) as f64
+}

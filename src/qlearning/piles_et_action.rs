@@ -171,6 +171,7 @@ impl Piles {
     }
 }
 
+// Algorithme distribution Thompson
 fn choisis_action(hashmap: &FxHashMap<Action, f64>) -> &Action {
     let mut somme = 0.0;
     for entrée in hashmap {
@@ -188,6 +189,20 @@ fn choisis_action(hashmap: &FxHashMap<Action, f64>) -> &Action {
     }
 
     hashmap.keys().next().unwrap()
+}
+
+// Algorithme Epsilon-Gloûton
+fn _choisis_action(hashmap: &FxHashMap<Action, f64>, epsilon: f64) -> &Action {
+    let vecteur = Vec::from_iter(hashmap.iter());
+    let mut rng = rand::thread_rng();
+    let valeur_aléatoire: f64 = rng.gen();
+
+    if valeur_aléatoire < epsilon {
+        let index = rng.gen_range(0..vecteur.len());
+        return vecteur[index].0;
+    } else {
+        return &_vecteur_max(&vecteur);
+    }
 }
 
 impl PilesIndex {
@@ -216,4 +231,21 @@ impl Action {
         future_piles.trie_original();
         future_piles.enleve_index()
     }
+}
+
+fn _vecteur_max<'a>(liste_action: &Vec<(&'a Action, &f64)>) -> &'a Action {
+    if liste_action.is_empty() {
+        return &Action {
+            pile: 0,
+            nb_enleve: 0,
+        };
+    }
+    let mut iterator = liste_action.into_iter();
+    let mut meilleure_action = iterator.next().unwrap();
+    for action_qualité in iterator {
+        if action_qualité.1 > meilleure_action.1 {
+            meilleure_action = action_qualité;
+        }
+    }
+    &meilleure_action.0
 }

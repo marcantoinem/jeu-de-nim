@@ -12,9 +12,10 @@ fn main() {
         println!("Le premier joueur devrait gagner.");
     }
 
-    let nb_partie = 5_000;
+    let nb_partie = 50_000;
     let nb_modèle = 125;
     let nb_travailleur = 8;
+
     let paramètres = Paramètres {
         alpha: 0.9,
         gamma: 1.0,
@@ -24,8 +25,12 @@ fn main() {
     };
 
     let avant = Instant::now();
-    let pourcent = qlearning::teste_fiabilité(piles, nb_partie, nb_modèle, nb_travailleur, paramètres);
-    let chrono = avant.elapsed().as_millis().to_formatted_string(&Locale::fr_CA);
+    let pourcent =
+        qlearning::teste_fiabilité(piles, nb_partie, nb_modèle, nb_travailleur, paramètres);
+    let chrono = avant
+        .elapsed()
+        .as_millis()
+        .to_formatted_string(&Locale::fr_CA);
 
     let modèles = (nb_modèle * nb_travailleur).to_formatted_string(&Locale::fr_CA);
     let nb_partie = nb_partie.to_formatted_string(&Locale::fr_CA);
