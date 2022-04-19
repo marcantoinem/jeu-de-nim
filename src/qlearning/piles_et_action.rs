@@ -15,7 +15,7 @@ pub struct Action {
 pub struct Paramètres {
     pub alpha: f64,
     pub gamma: f64,
-    pub beta: f64,
+    pub k: f64,
     pub récompense: f64,
     pub punition: f64,
 }
@@ -146,6 +146,7 @@ impl Piles {
         let mut nb_coup = 0;
         let mut piles = self;
         while !piles.zero_partout() {
+            // println!("{}", piles);
             piles = piles.trouver_xor_zero();
             nb_coup += 1;
         }

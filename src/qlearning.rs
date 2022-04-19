@@ -6,14 +6,16 @@ pub mod piles_et_action;
 
 const MINIMUM: f64 = 0.001;
 const MAXIMUM: f64 = 40.0;
+const BETA_MAX: f64 = 16.0;
 
 pub fn entraine(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Piles, Action> {
     let mut hashmap = piles.genere_hashmap();
-    let mut _beta = 0.0;
+    for nb in 0..nb_partie {
+        let beta = p.k * (nb * nb) as f64;
 
-    for _nb in 0..nb_partie {
         let mut piles = *piles;
         let mut partie = vec![];
+
         let win = loop {
             if piles.zero_partout() {
                 // Victoire deuxième joueur
@@ -35,7 +37,7 @@ pub fn entraine(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Pile
 
         partie.reverse();
 
-        let mut qualité_dbs = 1.0;
+        let mut qualité_max = if win { 1.0 } else { -1.0 };
 
         for (piles, action_prise) in partie {
             let mut piles = piles;
@@ -45,10 +47,10 @@ pub fn entraine(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Pile
 
             if win {
                 *qualité =
-                    (1.0 - p.alpha) * *qualité + p.alpha * (p.récompense + p.gamma * qualité_dbs);
+                    (1.0 - p.alpha) * *qualité + p.alpha * (p.récompense + p.gamma * qualité_max);
             } else {
                 *qualité =
-                    (1.0 - p.alpha) * *qualité + p.alpha * (p.punition + p.gamma * qualité_dbs);
+                    (1.0 - p.alpha) * *qualité + p.alpha * (p.punition + p.gamma * qualité_max);
             }
 
             if *qualité < MINIMUM {
@@ -57,17 +59,14 @@ pub fn entraine(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Pile
                 *qualité = MAXIMUM;
             }
 
-            let entrée = hashmap.get(&piles).unwrap();
-            qualité_dbs = _qualité_maximale(entrée);
+            qualité_max = qualité_maximale_régularisée(entrée, beta);
+            // qualité_max = qualité_maximale(entrée);
         }
-        // _beta = p.beta - p.beta * (-50.0 / nb_partie as f64 * (_nb as f64)).exp();
-        _beta = p.beta * _nb as f64 / nb_partie as f64;
-        // _beta = p.beta * (_nb * _nb) as f64 / (nb_partie * nb_partie) as f64;
     }
     nettoyer_hashmap(hashmap)
 }
 
-pub fn entraine_affiche(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Piles, Action> {
+pub fn entraine_affiche(piles: &Piles, nb_partie: u64, p: Paramètres) {
     let mut hashmap = piles.genere_hashmap();
 
     for nb in 0..nb_partie {
@@ -95,20 +94,23 @@ pub fn entraine_affiche(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHash
 
         partie.reverse();
 
-        let mut qualité_dbs = 1.0;
+        let mut qualité_max = 1.0;
 
         for (piles, action_prise) in partie {
             let mut piles = piles;
+
             piles.trie_croissant();
+
             let entrée = hashmap.entry(piles).or_default();
+
             let qualité = entrée.entry(action_prise).or_default();
 
             if win {
                 *qualité =
-                    (1.0 - p.alpha) * *qualité + p.alpha * (p.récompense + p.gamma * qualité_dbs);
+                    (1.0 - p.alpha) * *qualité + p.alpha * (p.récompense + p.gamma * qualité_max);
             } else {
                 *qualité =
-                    (1.0 - p.alpha) * *qualité + p.alpha * (p.punition + p.gamma * qualité_dbs);
+                    (1.0 - p.alpha) * *qualité + p.alpha * (p.punition + p.gamma * qualité_max);
             }
 
             if *qualité < MINIMUM {
@@ -125,15 +127,17 @@ pub fn entraine_affiche(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHash
             );
 
             let entrée = hashmap.get(&piles).unwrap();
-            qualité_dbs = _qualité_maximale(entrée);
+            qualité_max = qualité_maximale(entrée);
         }
     }
-    nettoyer_hashmap(hashmap)
 }
 
-fn _qualité_maximale_régularisée(liste_action: &FxHashMap<Action, f64>, beta: f64) -> f64 {
+fn qualité_maximale_régularisée(liste_action: &FxHashMap<Action, f64>, beta: f64) -> f64 {
     if liste_action.is_empty() {
         return 1.0;
+    }
+    if beta > BETA_MAX {
+        return qualité_maximale(liste_action);
     }
     // Source : https://www.ijcai.org/proceedings/2020/0276.pdf
     let mut dbs: f64 = 0.0;
@@ -150,7 +154,7 @@ fn _qualité_maximale_régularisée(liste_action: &FxHashMap<Action, f64>, beta:
     dbs as f64
 }
 
-fn _qualité_maximale(liste_action: &FxHashMap<Action, f64>) -> f64 {
+fn qualité_maximale(liste_action: &FxHashMap<Action, f64>) -> f64 {
     if liste_action.is_empty() {
         return 1.0;
     }
@@ -235,6 +239,8 @@ pub fn teste_fiabilité(
         let travailleur = thread::spawn(move || {
             return teste_victoire(&piles, nb_partie, nb_modèle, p);
         });
+
+        // À noter qu'ici on pousse des travailleurs #Totalement pas un goulag
         travailleurs.push(travailleur);
     }
 
