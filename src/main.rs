@@ -4,7 +4,7 @@ use std::time::Instant;
 pub mod qlearning;
 
 fn main() {
-    let piles = Piles([1, 4, 5, 7, 0, 0, 0, 0]);
+    let piles = Piles([1, 2, 3, 4, 5, 6, 0, 0]);
 
     if piles.xor() == 0 {
         println!("Attention, le deuxième joueur devrait gagner.");

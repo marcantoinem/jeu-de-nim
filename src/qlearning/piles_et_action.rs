@@ -192,7 +192,7 @@ fn choisis_action(hashmap: &FxHashMap<Action, f64>) -> &Action {
     hashmap.keys().next().unwrap()
 }
 
-// Algorithme Epsilon-Gloûton
+// Algorithme Epsilon-Gloûton. Inutilisé, car moins efficace.
 fn _choisis_action(hashmap: &FxHashMap<Action, f64>, epsilon: f64) -> &Action {
     let vecteur = Vec::from_iter(hashmap.iter());
     let mut rng = rand::thread_rng();
