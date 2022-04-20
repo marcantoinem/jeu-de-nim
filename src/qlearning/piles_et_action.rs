@@ -3,7 +3,7 @@ use fxhash::FxHashMap;
 use rand::Rng;
 use std::fmt;
 
-const NB_DE_PILE: usize = 8;
+pub const NB_DE_PILE: usize = 8;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Action {
@@ -17,7 +17,6 @@ pub struct Paramètres {
     pub gamma: f64,
     pub k: f64,
     pub récompense: f64,
-    pub punition: f64,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Index, IndexMut, IntoIterator)]
@@ -27,7 +26,9 @@ impl fmt::Display for Piles {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut piles_str = String::new();
         for pile in self.0 {
-            piles_str.push_str(&format!(" {} ", pile))
+            if pile != 0 {
+                piles_str.push_str(&format!("{} ", pile));
+            }
         }
         write!(f, "{}", piles_str)
     }
@@ -193,12 +194,12 @@ fn choisis_action(hashmap: &FxHashMap<Action, f64>) -> &Action {
 }
 
 // Algorithme Epsilon-Gloûton. Inutilisé, car moins efficace.
-fn _choisis_action(hashmap: &FxHashMap<Action, f64>, epsilon: f64) -> &Action {
+fn _choisis_action(hashmap: &FxHashMap<Action, f64>) -> &Action {
     let vecteur = Vec::from_iter(hashmap.iter());
     let mut rng = rand::thread_rng();
     let valeur_aléatoire: f64 = rng.gen();
 
-    if valeur_aléatoire < epsilon {
+    if valeur_aléatoire < 0.1 {
         let index = rng.gen_range(0..vecteur.len());
         return vecteur[index].0;
     } else {

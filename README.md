@@ -1,9 +1,9 @@
 # Implémentation du Qlearning avec le jeu de Nim en rust
 ## Installation d'un environnement rust sur Windows
-1. Aller sur https://www.rust-lang.org/tools/install et télécharger rustup-init.exe
-2. Exécuter rustup-init et choisir customize-installation pour changer le default host triple à x86_64-pc-windows-gnu (les autres paramètres peuvent être laissé à leur valeur par défaut)
-3. Attendre que l'installation se complète
-4. Redémarrer l'ordinateur pour rafraichir le shell
+1. Aller sur https://www.rust-lang.org/tools/install et télécharger rustup-init.exe.
+2. Exécuter rustup-init et choisir customize-installation pour changer le default host triple à x86_64-pc-windows-gnu (les autres paramètres peuvent être laissé à leur valeur par défaut).
+3. Attendre que l'installation se complète.
+4. Redémarrer l'ordinateur pour rafraichir le shell.
 
 ## Mise en route
 Pour obtenir le code utiliser

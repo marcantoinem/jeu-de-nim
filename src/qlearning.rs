@@ -8,7 +8,7 @@ const MINIMUM: f64 = 0.001;
 const MAXIMUM: f64 = 40.0;
 const BETA_MAX: f64 = 16.0;
 
-pub fn entraine(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Piles, Action> {
+pub fn entraine(piles: &Piles, nb_partie: usize, p: Paramètres) -> FxHashMap<Piles, Action> {
     let mut hashmap = piles.genere_hashmap();
     for nb in 0..nb_partie {
         let beta = p.k * (nb * nb) as f64;
@@ -50,7 +50,7 @@ pub fn entraine(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Pile
                     (1.0 - p.alpha) * *qualité + p.alpha * (p.récompense + p.gamma * qualité_max);
             } else {
                 *qualité =
-                    (1.0 - p.alpha) * *qualité + p.alpha * (p.punition + p.gamma * qualité_max);
+                    (1.0 - p.alpha) * *qualité + p.alpha * (-p.récompense + p.gamma * qualité_max);
             }
 
             if *qualité < MINIMUM {
@@ -66,7 +66,7 @@ pub fn entraine(piles: &Piles, nb_partie: u64, p: Paramètres) -> FxHashMap<Pile
     nettoyer_hashmap(hashmap)
 }
 
-pub fn entraine_affiche(piles: &Piles, nb_partie: u64, p: Paramètres) {
+pub fn entraine_affiche(piles: &Piles, nb_partie: usize, p: Paramètres) {
     let mut hashmap = piles.genere_hashmap();
 
     for nb in 0..nb_partie {
@@ -110,7 +110,7 @@ pub fn entraine_affiche(piles: &Piles, nb_partie: u64, p: Paramètres) {
                     (1.0 - p.alpha) * *qualité + p.alpha * (p.récompense + p.gamma * qualité_max);
             } else {
                 *qualité =
-                    (1.0 - p.alpha) * *qualité + p.alpha * (p.punition + p.gamma * qualité_max);
+                    (1.0 - p.alpha) * *qualité + p.alpha * (-p.récompense + p.gamma * qualité_max);
             }
 
             if *qualité < MINIMUM {
@@ -217,7 +217,7 @@ pub fn victoire_parfaite(piles_originales: Piles, hashmap: FxHashMap<Piles, Acti
     }
 }
 
-pub fn teste_victoire(piles: &Piles, nb_partie: u64, nb_modèle: u32, p: Paramètres) -> u32 {
+pub fn teste_victoire(piles: &Piles, nb_partie: usize, nb_modèle: usize, p: Paramètres) -> u32 {
     let mut nb_victoire = 0;
     for _ in 0..nb_modèle {
         let hashmap = entraine(piles, nb_partie, p);
@@ -228,14 +228,14 @@ pub fn teste_victoire(piles: &Piles, nb_partie: u64, nb_modèle: u32, p: Paramè
 
 pub fn teste_fiabilité(
     piles: Piles,
-    nb_partie: u64,
-    nb_modèle: u32,
-    nb_travailleur: u32,
+    nb_partie: usize,
+    nb_modèle: usize,
+    nb_coeur: usize,
     p: Paramètres,
 ) -> f64 {
     let mut travailleurs = Vec::new();
 
-    for _ in 0..nb_travailleur {
+    for _ in 0..nb_coeur {
         let travailleur = thread::spawn(move || {
             return teste_victoire(&piles, nb_partie, nb_modèle, p);
         });
@@ -250,5 +250,5 @@ pub fn teste_fiabilité(
         nb_victoire += resultat;
     }
 
-    nb_victoire as f64 / (nb_modèle * nb_travailleur) as f64
+    nb_victoire as f64 / (nb_modèle * nb_coeur) as f64
 }
