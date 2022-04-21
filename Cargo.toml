@@ -1,5 +1,5 @@
 [package]
-name = "nim_game"
+name = "jeu_de_nim"
 version = "1.0.0"
 edition = "2021"
 
@@ -11,3 +11,4 @@ fxhash = "0.2.1"
 num_cpus = "1.13"
 derive_more = "0.99.17"
 num-format = "0.4.0"
+eframe = "0.17.0"

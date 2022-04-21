@@ -1,4 +1,4 @@
-use crate::qlearning::piles_et_action::{Action, Paramètres, Piles};
+use crate::app::qlearning::piles_et_action::{Action, Paramètres, Piles};
 use fxhash::FxHashMap;
 use std::thread;
 
@@ -66,7 +66,7 @@ pub fn entraine(piles: &Piles, nb_partie: usize, p: Paramètres) -> FxHashMap<Pi
     nettoyer_hashmap(hashmap)
 }
 
-pub fn entraine_affiche(piles: &Piles, nb_partie: usize, p: Paramètres) {
+pub fn _entraine_affiche(piles: &Piles, nb_partie: usize, p: Paramètres) {
     let mut hashmap = piles.genere_hashmap();
 
     for nb in 0..nb_partie {
