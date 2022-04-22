@@ -12,7 +12,7 @@ pub const NB_DE_PILE: usize = 8;
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Action {
     pub pile: u8,
-    pub nb_enleve: u8,
+    pub nb_enlevé: u8,
 }
 
 // Cette structure regroupe toutes les constantes nécessaires pour le 
@@ -117,7 +117,7 @@ impl Piles {
                 for i in 1..=pile {
                     let action = Action {
                         pile: index as u8,
-                        nb_enleve: i,
+                        nb_enlevé: i,
                     };
                     actions.insert(action, 1.0);
                 }
@@ -224,7 +224,7 @@ fn _vecteur_max<'a>(liste_action: &Vec<(&'a Action, &f64)>) -> &'a Action {
     if liste_action.is_empty() {
         return &Action {
             pile: 0,
-            nb_enleve: 0,
+            nb_enlevé: 0,
         };
     }
     let mut iterator = liste_action.into_iter();
@@ -267,7 +267,7 @@ impl Action {
         let mut future_piles = piles.ajout_index();
         future_piles.trie_croissant();
         let index = self.pile as usize;
-        future_piles[index].1 -= self.nb_enleve;
+        future_piles[index].1 -= self.nb_enlevé;
         future_piles.trie_original();
         future_piles.enleve_index()
     }

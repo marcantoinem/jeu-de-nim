@@ -118,7 +118,12 @@ fn qualité_maximale(liste_action: &FxHashMap<Action, f64>) -> f64 {
 
 // Cette fonction sélectionne l'action avec la plus grande qualité
 fn action_qualité_maximale(liste_action: FxHashMap<Action, f64>) -> Action {
-    if liste_action.is_empty() {}
+    if liste_action.is_empty() {
+        return Action{
+            pile: 0,
+            nb_enlevé: 0,
+        };
+    }
     let mut iterator = liste_action.into_iter();
     let mut meilleure_action = iterator.next().unwrap();
     for action_qualité in iterator {
