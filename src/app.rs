@@ -21,10 +21,10 @@ impl Default for TemplateApp {
         Self {
             sortie: "".to_owned(),
             sortie_piles: "".to_owned(),
-            k: 0.001,
+            k: 1.0,
             nb_partie: 1_000,
-            nb_modèle: 25,
-            nb_coeur: 1,
+            nb_modèle: 100,
+            nb_coeur: 4,
             incertitude: false,
             _piles: Piles([4, 3, 2, 1, 0, 0, 0, 0]),
         }
@@ -85,11 +85,24 @@ impl epi::App for TemplateApp {
                 for index in 0..NB_DE_PILE {
                     ui.add(
                         egui::DragValue::new(&mut self._piles[index])
-                            .speed(0.02)
+                            .speed(0.1)
                             .clamp_range(0..=255),
                     );
                 }
             });
+            if ui.button("Informations sur les piles").clicked() {
+                self.sortie_piles = format!(
+                    "Pour résoudre ces piles, il faut effectuer {} coups parfaits.\n",
+                    self._piles.nb_coup()
+                );
+                if self._piles.xor() == 0 {
+                    self.sortie_piles = format!(
+                        "{}Attention, le deuxième joueur devrait gagner!",
+                        self.sortie_piles
+                    );
+                }
+            }
+            ui.label(self.sortie_piles.to_owned());
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -109,7 +122,6 @@ impl epi::App for TemplateApp {
                     récompense: 1.0,
                 };
 
-                // let nb_coup = piles.nb_coup();
                 let avant = Instant::now();
                 if self.incertitude {
                     let mut min = 100.0;
@@ -173,13 +185,6 @@ impl epi::App for TemplateApp {
                     nb_modèle * nb_coeur,
                     self.sortie
                 );
-
-                if piles.xor() == 0 {
-                    self.sortie = format!(
-                        "Attention, le deuxième joueur devrait gagner!\n{}",
-                        self.sortie
-                    );
-                }
             }
             ui.label(self.sortie.to_owned());
             egui::warn_if_debug_build(ui);
