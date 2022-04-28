@@ -9,7 +9,7 @@
 1. Appuyer sur le bouton télécharger ce dépôt et sélectionner l'option zip.
 ![Emplacement du bouton téléchargement](./screenshot.png)
 2. Décompresser le .zip. 
-3. Pour compiler et exécuter, il faut être à l'intérieur du dossier et exécuter dans le cmd ou powershell.
+3. Pour compiler et exécuter, il faut être à l'intérieur du dossier et exécuter dans cmd ou powershell.
 ```
 cargo run --release
 ```
