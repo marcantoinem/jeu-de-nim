@@ -3,10 +3,14 @@ name = "jeu_de_nim"
 version = "1.0.0"
 edition = "2021"
 
+[profile.dev]
+opt-level = 3
+
 [profile.release]
 opt-level = 3
 lto = true          # Enable Link Time Optimization
 codegen-units = 1   # Reduce number of codegen units to increase optimizations.
+panic = "abort"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
