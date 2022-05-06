@@ -5,8 +5,8 @@ pub mod qlearning;
 extern crate num_cpus;
 
 fn main() {
-    let piles = Piles([3, 3, 3, 3, 3, 3, 3, 0]);
-    let k = 0.001;
+    let piles = Piles([2, 1, 0, 0, 0, 0, 0, 0]);
+    let k = 1.0;
     let nb_coeur = num_cpus::get();
     let nb_partie = 2_000;
     let nb_modèle = 125;
