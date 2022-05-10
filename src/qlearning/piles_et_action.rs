@@ -5,7 +5,7 @@ use std::fmt;
 
 // C'est le nombre de pile, la seule partie du code à changer si on
 // change cette constante est la fonction genere_hashmap() dans ce fichier
-pub const NB_DE_PILE: usize = 8;
+pub const NB_DE_PILE: usize = 3;
 
 // Cette structure représente une action en fonction de l'index de la
 // pile où elle est effectuée et le nombre d'objet enlevé.
@@ -15,7 +15,7 @@ pub struct Action {
     pub nb_enlevé: u8,
 }
 
-// Cette structure regroupe toutes les constantes nécessaires pour le 
+// Cette structure regroupe toutes les constantes nécessaires pour le
 // calcul du Q-learning.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Paramètres {
@@ -34,9 +34,7 @@ impl fmt::Display for Piles {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut piles_str = String::new();
         for pile in self.0 {
-            if pile != 0 {
-                piles_str.push_str(&format!("{} ", pile));
-            }
+            piles_str.push_str(&format!("{} ", pile));
         }
         write!(f, "{}", piles_str)
     }
@@ -136,19 +134,9 @@ impl Piles {
         for i in 0..=piles_triées[0] {
             for j in i..=piles_triées[1] {
                 for k in j..=piles_triées[2] {
-                    for l in k..=piles_triées[3] {
-                        for m in l..=piles_triées[4] {
-                            for n in m..=piles_triées[5] {
-                                for o in n..=piles_triées[6] {
-                                    for p in o..=piles_triées[7] {
-                                        let piles = Piles([i, j, k, l, m, n, o, p]);
-                                        let actions = piles.genere_action();
-                                        hashmap.insert(piles, actions);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    let piles = Piles([i, j, k]);
+                    let actions = piles.genere_action();
+                    hashmap.insert(piles, actions);
                 }
             }
         }
@@ -272,5 +260,3 @@ impl Action {
         future_piles.enleve_index()
     }
 }
-
-

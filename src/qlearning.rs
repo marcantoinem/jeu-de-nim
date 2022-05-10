@@ -1,6 +1,7 @@
 use crate::qlearning::piles_et_action::{Action, Paramètres, Piles};
 use fxhash::FxHashMap;
 use std::thread;
+use text_io::read;
 
 pub mod piles_et_action;
 
@@ -15,13 +16,16 @@ pub fn entraine(piles: &Piles, nb_partie: usize, p: Paramètres) -> FxHashMap<Pi
     let mut hashmap = piles.genere_hashmap();
 
     for nb in 0..nb_partie {
+        println!("Partie #{}:", nb + 1);
         let mut piles = *piles;
         let mut partie = vec![];
 
         // Cette loop représente une partie
         let win = loop {
+            println!("{}", piles);
             if piles.zero_partout() {
                 // Le deuxième joueur à gagner, ce qui termine la partie
+                println!("Vous avez gagné pour cette fois.");
                 break false;
             }
 
@@ -29,13 +33,16 @@ pub fn entraine(piles: &Piles, nb_partie: usize, p: Paramètres) -> FxHashMap<Pi
             partie.push((piles, *action_prise));
             piles = action_prise.future_piles(piles);
 
+            println!("{}", piles);
             if piles.zero_partout() {
                 // Le premier joueur à gagner, ce qui termine la partie
+                println!("Vous avez perdu.");
                 break true;
             }
-
-            let action_prise = piles.cherche_action(&hashmap);
-            piles = action_prise.future_piles(piles);
+            println!("Pile choisie (commence à 1), nombre enlevé");
+            let pile_choisie: usize = read!();
+            let nb_enlevé: u8 = read!();
+            piles[pile_choisie - 1] -= nb_enlevé;
         };
 
         // On part de la fin afin de pouvoir calculer le maximum des piles futures avant d'appliquer la formule du Q-learning.
@@ -70,6 +77,7 @@ pub fn entraine(piles: &Piles, nb_partie: usize, p: Paramètres) -> FxHashMap<Pi
             qualité_max = qualité_maximale_régularisée(entrée, beta);
         }
     }
+    println!("{:#?}", hashmap);
     nettoyer_hashmap(hashmap)
 }
 
@@ -119,7 +127,7 @@ fn qualité_maximale(liste_action: &FxHashMap<Action, f64>) -> f64 {
 // Cette fonction sélectionne l'action avec la plus grande qualité
 fn action_qualité_maximale(liste_action: FxHashMap<Action, f64>) -> Action {
     if liste_action.is_empty() {
-        return Action{
+        return Action {
             pile: 0,
             nb_enlevé: 0,
         };
@@ -134,7 +142,7 @@ fn action_qualité_maximale(liste_action: FxHashMap<Action, f64>) -> Action {
     meilleure_action.0
 }
 
-// Cette fonction transforme une hashmap avec des actions et des qualités pour chaques piles et en ressort une 
+// Cette fonction transforme une hashmap avec des actions et des qualités pour chaques piles et en ressort une
 // hashmap qui associe chacune des piles avec la meilleure action
 fn nettoyer_hashmap(hashmap: FxHashMap<Piles, FxHashMap<Action, f64>>) -> FxHashMap<Piles, Action> {
     let mut hashmap_nettoyé = FxHashMap::default();

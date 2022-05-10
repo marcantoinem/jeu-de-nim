@@ -7,8 +7,6 @@ edition = "2021"
 
 [profile.release]
 opt-level = 3
-lto = true
-codegen-units = 1
 
 [dependencies]
 rand = "0.8.5"
@@ -16,3 +14,4 @@ fxhash = "0.2.1"
 num_cpus = "1.13"
 derive_more = "0.99.17"
 num-format = "0.4.0"
+text_io = "0.1.10"
