@@ -12,7 +12,6 @@ pub struct TemplateApp {
     nb_partie: usize,
     nb_modèle: usize,
     nb_coeur: usize,
-    écart_type: bool,
     n: usize,
     _piles: Piles,
 }
@@ -30,9 +29,8 @@ impl Default for TemplateApp {
             },
             nb_partie: 1_000,
             nb_modèle: 100,
-            nb_coeur: 4,
-            n: 30,
-            écart_type: false,
+            nb_coeur: 8,
+            n: 5,
             _piles: Piles([4, 3, 2, 1, 0, 0, 0, 0]),
         }
     }
@@ -51,7 +49,6 @@ impl epi::App for TemplateApp {
             nb_partie,
             nb_modèle,
             nb_coeur,
-            écart_type: _,
             n,
             _piles,
         } = self;
@@ -88,10 +85,7 @@ impl epi::App for TemplateApp {
                         .logarithmic(true),
                 );
                 ui.add(egui::Slider::new(nb_coeur, 1..=num_cpus::get()).text("Nombre de coeur(s)"));
-                ui.checkbox(&mut self.écart_type, "Calcul de l'écart-type");
-                if self.écart_type {
-                    ui.add(egui::Slider::new(n, 1..=100).text("Taille échantillon"));
-                }
+                ui.add(egui::Slider::new(n, 1..=100).text("Taille échantillon"));
                 ui.collapsing("Paramètres Qlearning", |ui| {
                     ui.add(egui::Slider::new(&mut paramètres.alpha, 0.0..=1.0).text("Alpha"));
                     ui.add(egui::Slider::new(&mut paramètres.gamma, 0.0..=2.0).text("Gamma"));
@@ -138,61 +132,43 @@ impl epi::App for TemplateApp {
                 let paramètres = self.paramètres;
 
                 let avant = Instant::now();
-                if self.écart_type {
-                    let mut somme = 0.0;
-                    let mut ensemble = vec![];
-                    let n: usize = self.n;
-                    for _ in 0..n {
-                        let pourcent = qlearning::teste_fiabilité(
-                            piles,
-                            nb_partie,
-                            nb_modèle,
-                            nb_coeur,
-                            paramètres,
-                        ) * 100.0;
-                        ensemble.push(pourcent);
-                        somme += pourcent;
-                    }
-
-                    let moyenne = somme / n as f64;
-                    let mut variance = 0.0;
-
-                    for element in ensemble {
-                        variance += (element - moyenne) * (element - moyenne)
-                    }
-
-                    variance = (variance / (n - 1) as f64).sqrt();
-
-                    let chrono = avant
-                        .elapsed()
-                        .as_millis()
-                        .to_formatted_string(&Locale::fr_CA);
-
-                    let nb_partie = nb_partie.to_formatted_string(&Locale::fr_CA);
-
-                    self.sortie = format!(
-                        "{:.2}±{:.2}% avec {} parties en {} ms\n{}",
-                        moyenne, variance, nb_partie, chrono, self.sortie
-                    );
-                } else {
-                    let pourcent = qlearning::teste_fiabilité(
+                let mut somme = 0;
+                let mut ensemble = vec![];
+                let n = self.n;
+                for _ in 0..n {
+                    let liste_nb_victoire = qlearning::teste_fiabilité(
                         piles,
                         nb_partie,
                         nb_modèle,
                         nb_coeur,
                         paramètres,
-                    ) * 100.0;
-
-                    let chrono = avant
-                        .elapsed()
-                        .as_millis()
-                        .to_formatted_string(&Locale::fr_CA);
-
-                    self.sortie = format!(
-                        "{:.2}% avec {} parties en {} ms\n{}",
-                        pourcent, nb_partie, chrono, self.sortie
                     );
+                    for nb_victoire in liste_nb_victoire {
+                        ensemble.push(nb_victoire);
+                        somme += nb_victoire;
+                    }
                 }
+
+                let moyenne = somme as f64 / (n * nb_modèle * nb_coeur) as f64 * 100.0;
+                let mut variance = 0.0;
+
+                for element in ensemble {
+                    variance += (element as f64 - moyenne) * (element as f64 - moyenne)
+                }
+
+                variance = (variance / (n * nb_coeur - 1) as f64).sqrt();
+
+                let chrono = avant
+                    .elapsed()
+                    .as_millis()
+                    .to_formatted_string(&Locale::fr_CA);
+
+                let nb_partie = nb_partie.to_formatted_string(&Locale::fr_CA);
+
+                self.sortie = format!(
+                    "{:.2}±{:.2}% avec {} parties en {} ms\n{}",
+                    moyenne, variance, nb_partie, chrono, self.sortie
+                );
 
                 let nb_modèle = (nb_modèle * nb_coeur).to_formatted_string(&Locale::fr_CA);
 
