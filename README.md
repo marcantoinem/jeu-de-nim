@@ -6,11 +6,10 @@
 4. Redémarrer l'ordinateur pour rafraichir le shell.
 
 ## Mise en route
-Pour obtenir le code utiliser
-```
-git clone https://novalemark.nohost.me/gitea/lemark/jeu_de_nim && cd jeu_de_nim
-```
-Pour compiler et exécuter, il faut être à l'intérieur du dossier et exécuter
+1. Appuyer sur le bouton télécharger ce dépôt et sélectionner l'option zip.
+![Emplacement du bouton téléchargement](./screenshot.png)
+2. Décompresser le .zip. 
+3. Pour compiler et exécuter, il faut être à l'intérieur du dossier et exécuter dans cmd ou powershell.
 ```
 cargo run --release
 ```
