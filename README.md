@@ -15,10 +15,10 @@ cargo run --release
 ```
 
 ## Structure du code
-Le code est réparti en trois fichiers importants: src/main.rs, src/qlearning.rs et src/qlearning/piles_et_action.rs.
-### src/main.rs
-C'est ici que se trouve la fonction main où le code est exécuté.
-### src/qlearning.rs
+Le code est réparti en trois fichiers importants: src/app.rs, src/qlearning.rs et src/qlearning/piles_et_action.rs.
+### src/app.rs
+C'est ici que se trouve l'interface où le code est attribué à des boutons.
+### src/app/qlearning.rs
 Contient l'implémentation du Qlearning.
-### src/qlearning/piles_et_actions.rs
+### src/app/qlearning/piles_et_actions.rs
 Est composé de plusieurs petits algorithmes relié aux structures piles et actions notamment l'algorithme xor-zéro et des algorithmes de choix d'actions.
